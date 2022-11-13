@@ -1,6 +1,4 @@
 var scale = 5;
-var width = 700;
-var height = 500;
 
 var horc = [];
 var horcs = ['D', 'S', 'H', 'O'];
@@ -16,8 +14,8 @@ var lastSheet = [];
 	
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
-width = Math.floor(window.innerWidth / scale);
-height = Math.floor(window.innerHeight / scale);
+var width = Math.floor(window.innerWidth / scale);
+var height = Math.floor(window.innerHeight / scale);
 canvas.width = width * scale;
 canvas.height = height * scale;
 

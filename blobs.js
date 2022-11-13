@@ -1,7 +1,4 @@
 var scale = 5;
-var width = 700;
-var height = 500;
-
 var range = 3;
 var sheet = [];
 var pallet = [];	
@@ -10,20 +7,18 @@ var lastSheet = [];
 
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
-width = Math.floor(window.innerWidth / scale) - 3;
-height = Math.floor(window.innerHeight / scale) - 3;
+var width = Math.floor(window.innerWidth / scale) - 3;
+var height = Math.floor(window.innerHeight / scale) - 3;
 canvas.width = width * scale;
 canvas.height = height * scale;
 
 for(var i = 0; i < height; i++){
 	sheet[i] = [];
-	lastSheet[i] = [];
-}
-
-for(var i = 0; i < height; i++){
 	for(var j = 0; j < width; j++){
 		sheet[i][j] = Math.floor(Math.random() * range)
 	}
+
+	lastSheet[i] = [];
 }
 
 window.setInterval(runFrame, 1);
@@ -70,7 +65,6 @@ function runFrame(){
 				sheet[row][col] = val;
 			}
 		}
-		
 	
 	}
 

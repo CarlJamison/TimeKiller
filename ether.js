@@ -1,7 +1,4 @@
 var scale = 5;
-var width = 700;
-var height = 500;
-
 var range = 5;
 var sheet = [];	
 var pallet = [
@@ -15,23 +12,26 @@ var pallet = [
 var lastSheet = [];
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
-width = Math.floor(window.innerWidth / scale) - 3;
-height = Math.floor(window.innerHeight / scale) - 3;
+var width = Math.floor(window.innerWidth / scale) - 3;
+var height = Math.floor(window.innerHeight / scale) - 3;
 canvas.width = width * scale;
 canvas.height = height * scale;
 
 for(var i = 0; i < height; i++){
-	sheet[i] = [];
 	lastSheet[i] = [];
-}
 
-for(var i = 0; i < height; i++){
+	sheet[i] = [];
 	for(var j = 0; j < width; j++){
 		sheet[i][j] = Math.floor(Math.random() * range)
 	}
 }
 
 window.setInterval(runFrame, 1);
+
+function addPixel(row, col, list){
+	if(row >= 0 && row < height && col >= 0 && col < width)
+		list.push(sheet[row][col])
+}
 
 function runFrame(){
 
@@ -40,37 +40,11 @@ function runFrame(){
 		var col = Math.floor(Math.random() * width);
 
 		var surrList = [];
-		
-		if(row > 0){
-			surrList.push(sheet[row - 1][col])
-		}
-
-		if(col > 0){
-			surrList.push(sheet[row][col - 1])
-		}
-
-		if(row + 1 < height){
-			surrList.push(sheet[row + 1][col])
-		}
-
-		if(col + 1 < width){
-			surrList.push(sheet[row][col + 1])
-		}
-
-		if(row > 0 && col + 1 < width){
-			surrList.push(sheet[row - 1][col + 1])
-		}
-
-		if(row + 1 < height && col + 1 < width){
-			surrList.push(sheet[row + 1][col + 1])
-		}
-
-		if(row + 1 < height && col > 0){
-			surrList.push(sheet[row + 1][col - 1])
-		}
-
-		if(row > 0 && col > 0){
-			surrList.push(sheet[row - 1][col - 1])
+		for(var k = -1; k <= 1; k++){
+			for(var j = -1; j <= 1; j++){
+				if(k != 0 || j != 0) 
+					addPixel(row + k, col + j, surrList);
+			}
 		}
 
 		sheet[row][col] = surrList[Math.floor(Math.random() * surrList.length)];
