@@ -1,4 +1,4 @@
-var scale = 2;
+var scale = 5;
 var width = 700;
 var height = 500;
 
@@ -35,7 +35,7 @@ window.setInterval(runFrame, 1);
 
 function runFrame(){
 
-	for(var i = 0; i < 10000; i++){
+	for(var i = 0; i < 2000; i++){
 		var row = Math.floor(Math.random() * height);
 		var col = Math.floor(Math.random() * width);
 
