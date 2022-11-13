@@ -13,23 +13,22 @@ var DECOMPOSERS = true;
 var ENERGY_GAINED = 10;
 
 var lastSheet = [];
-window.onload = function init(){
 	
-	var canvas = document.getElementById("myCanvas");
-	width = Math.floor(window.innerWidth / scale);
-	height = Math.floor(window.innerHeight / scale);
-	canvas.width = width * scale;
-	canvas.height = height * scale;
-	
-	for(var i = 0; i < height; i++){
-		sheet[i] = [];
-		lastSheet[i] = [];
-	}
-	
-	addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 10, lifetime: 500, horc: 'P', metabolism: 0.5, germ: 10, energy: 100, age: 0});
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+width = Math.floor(window.innerWidth / scale);
+height = Math.floor(window.innerHeight / scale);
+canvas.width = width * scale;
+canvas.height = height * scale;
 
-	window.setInterval(runFrame, 1);
+for(var i = 0; i < height; i++){
+	sheet[i] = [];
+	lastSheet[i] = [];
 }
+
+addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 10, lifetime: 500, horc: 'P', metabolism: 0.5, germ: 10, energy: 100, age: 0});
+
+window.setInterval(runFrame, 1);
 
 function runFrame(){
 	var startTime = Date.now();
@@ -45,9 +44,8 @@ function runFrame(){
 			if (item.horc == 'P' && item.energy < item.entr)
 				item.energy++;
 
-			if (item.horc == 'S' && item.age > item.germ) {
+			if (item.horc == 'S' && item.age > item.germ)
 				item.horc = 'P';
-			}
 
 			if (item.energy <= 0 || item.age >= item.lifetime) {
 				killCreature(item);
@@ -241,8 +239,6 @@ function getPsuedoRandom() {
 }
 
 function refreshCanvas(){
-	var ctx = document.getElementById("myCanvas").getContext("2d");
-	
 	var lastVal = null;
 	
 	for(var i = 0; i < width; i++){
@@ -254,12 +250,10 @@ function refreshCanvas(){
 			if(value != lastSheet[j][i]){
 				if(value != lastVal){
 					if(!pallet[value]){
-						pallet[value] = {r: Math.random() * 256, g: Math.random() * 256, b: Math.random() * 256};
+						pallet[value] = "rgb(" + Math.random() * 256 + ", " + Math.random() * 256 + ", " + Math.random() * 256 + ")";
 					}
 					
-					var c = pallet[value];
-					ctx.fillStyle = "rgb(" + c.r + ", " + c.g + ", " + c.b + ")";
-					
+					ctx.fillStyle = pallet[value];
 					lastVal = value;
 				}
 			
