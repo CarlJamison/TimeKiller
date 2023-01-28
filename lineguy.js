@@ -7,9 +7,22 @@ var rtod = Math.PI / 180;
 canvas.width = width * scale;
 canvas.height = height * scale;
 
+var platforms = [
+	{ y: canvas.height - 300, sx: 0, ex: canvas.width },
+	{ y: canvas.height - 400, sx: 400, ex: 600 },
+	{ y: canvas.height - 500, sx: 600, ex: 800 },
+	{ y: canvas.height - 600, sx: 800, ex: 1000 },
+	{ y: canvas.height - 700, sx: 1000, ex: 1200 },
+]
+
 var standing = {
 	lt: 135, la: 135, lf: 90, ll: 90, rt: 45, ra: 45, rf: 90,
 	rl: 90, ab: 90, head: -90, neck: -90,
+}
+
+var jumping = {
+	lt: 60, la: 145, lf: 85, ll: 135, rt: 20, ra: 35, rf: -35,
+	rl: 100, ab: 100, head: -65, neck: -65,
 }
 
 var running = true;
@@ -17,31 +30,27 @@ var punch = null;
 
 ctx.shadowColor = "black";
 ctx.shadowBlur = 2;
-ctx.lineWidth = 10;
+ctx.lineWidth = 2 * scale;
 ctx.lineJoin = "round";
 ctx.lineCap = "round";
 
 var guy = {y: height / 2, x: width / 2};
 
-var la = {l: 55, a: 45, p: guy};
-var lf = {l: 60, a: 90, p: la};
+var la = {l: 11 * scale, a: 45, p: guy};
+var lf = {l: 12 * scale, a: 90, p: la};
+var ra = {l: 11 * scale, a: 135, p: guy};
+var rf = {l: 12 * scale, a: 90, p: ra};
+var ab = {l: 20 * scale, a: 100, p: guy};
+var lt = {l: 15 * scale, a: 135, p: ab};
+var ll = {l: 15 * scale, a: 135, p: lt};
+var rt = {l: 15 * scale, a: 135, p: ab};
+var rl = {l: 15 * scale, a: 135, p: rt};
+var neck = {l: 3 * scale, a: -65, p: guy};
+var head = {l: 5 * scale, a: -65, p: neck, head: true};
 la.c = [lf];
-
-var ra = {l: 55, a: 135, p: guy};
-var rf = {l: 60, a: 90, p: ra};
 ra.c = [rf];
-
-var ab = {l: 100, a: 100, p: guy};
-var lt = {l: 75, a: 135, p: ab};
-var ll = {l: 75, a: 135, p: lt};
 lt.c = [ll];
-
-var rt = {l: 75, a: 135, p: ab};
-var rl = {l: 75, a: 135, p: rt};
 rt.c = [rl];
-
-var neck = {l: 15, a: -65, p: guy};
-var head = {l: 25, a: -65, p: neck, head: true};
 neck.c = [head];
 ab.c = [lt, rt];
 guy.c = [ab, la, ra, neck];
@@ -49,6 +58,8 @@ guy.c = [ab, la, ra, neck];
 var guyState = { rt, rl, ll, lt, la, lf, ra, rf, head, neck, ab};
 
 var transition = { end: 0 }
+var falling = false;
+var upwardV = 0;
 
 window.setInterval(runFrame, 10);
 window.addEventListener("keydown", event => {
@@ -60,6 +71,9 @@ window.addEventListener("keydown", event => {
 	}
 
 	switch(event.key) {
+		case " ":
+			upwardV = 15 * scale;
+			break;
 		case "a":
 			if(running != -1){
 				newTransition.endState = getLeftRunningState(200);
@@ -83,6 +97,16 @@ window.addEventListener("keydown", event => {
 			break;
 	}
 });
+
+function renderPlatforms(){
+	ctx.beginPath();
+	platforms.forEach(p => {
+		ctx.moveTo(p.sx, p.y);
+		ctx.lineTo(p.ex, p.y);
+	});
+	
+	ctx.stroke();
+}
 
 function renderNode(node){
 	if(node.p){
@@ -177,10 +201,12 @@ function runFrame(){
 		setState(standing);
 	}
 
-	guy.x = (guy.x + (5 * running)) % canvas.width;
+	guy.x = (guy.x + (scale * 2 * running)) % canvas.width;
 	if(guy.x < 0){
 		guy.x = canvas.width + guy.x;
 	}
+
+	guy.y -= upwardV / 4 * scale;
 	
 	if(transition.end && Date.now() < transition.end){
 		var frame = Date.now() - transition.start;
@@ -194,8 +220,33 @@ function runFrame(){
 		);
 
 		setState(coolState);
+	}	
+	
+	var p = onPlatform()
+	if(!onPlatform()){
+		falling = true;
+		upwardV -= 1;
+		
+		setState(jumping);
+	}else{
+		upwardV = 0;
+		guy.y = p.y - (scale * 50);
 	}
 
 	renderNode(guy);
+	renderPlatforms();
 }
-  
+
+function onPlatform(){
+	if(upwardV > 0) return null;
+	ccw = (A, B, C) => (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x);
+
+	return platforms.find(p => {
+		var A = {x: p.sx, y: p.y}
+		var B = {x: p.ex, y: p.y}
+		var C = {x: guy.x, y: guy.y + (scale * 50)};
+		var D = {x: guy.x, y: guy.y + (scale * 50) - upwardV + 10};
+		console.log(ccw(A,C,D) != ccw(B,C,D) && ccw(A,B,C) != ccw(A,B,D));
+		return ccw(A,C,D) != ccw(B,C,D) && ccw(A,B,C) != ccw(A,B,D)
+	});
+}
