@@ -13,11 +13,11 @@ var platforms = [
 	{ y: canvas.height - 500, sx: 600, ex: 800 },
 	{ y: canvas.height - 600, sx: 800, ex: 1000 },
 	{ y: canvas.height - 700, sx: 1000, ex: 1200 },
-]
+];
 
 var standing = {
-	lt: 135, la: 135, lf: 90, ll: 90, rt: 45, ra: 45, rf: 90,
-	rl: 90, ab: 90, head: -90, neck: -90,
+	lt: 100, la: 135, lf: 90, ll: 110, rt: 60, ra: 95, rf: 35,
+	rl: 95, ab: 100, head: -65, neck: -65,
 }
 
 var jumping = {
@@ -25,9 +25,12 @@ var jumping = {
 	rl: 100, ab: 100, head: -65, neck: -65,
 }
 
-var running = true;
-var punch = null;
+var punch = {
+	la: 10, lf: -10, ra: 140, rf: 35
+}
 
+var running = true;
+var last = 1;
 ctx.shadowColor = "black";
 ctx.shadowBlur = 2;
 ctx.lineWidth = 2 * scale;
@@ -57,6 +60,11 @@ guy.c = [ab, la, ra, neck];
 
 var guyState = { rt, rl, ll, lt, la, lf, ra, rf, head, neck, ab};
 
+var punching = {
+	start: 0,
+	end: 0
+}
+
 var transition = { end: 0 }
 var falling = false;
 var upwardV = 0;
@@ -71,6 +79,9 @@ window.addEventListener("keydown", event => {
 	}
 
 	switch(event.key) {
+		case "p":
+			punching.end = Date.now() + 100;
+			break;
 		case " ":
 			upwardV = 15 * scale;
 			break;
@@ -83,8 +94,9 @@ window.addEventListener("keydown", event => {
 			break;
 		case "s":
 			if(running != 0){
-				newTransition.endState = standing;
+				newTransition.endState = running == 1 ? standing : reflect(standing);
 				transition = newTransition;
+				last = running;
 				running = 0;
 			}
 			break;
@@ -198,7 +210,7 @@ function runFrame(){
 	if(running){
 		setState(running == 1 ? getRunningState() : getLeftRunningState());
 	}else{
-		setState(standing);
+		setState(last == 1 ? standing : reflect(standing));
 	}
 
 	guy.x = (guy.x + (scale * 2 * running)) % canvas.width;
@@ -215,26 +227,42 @@ function runFrame(){
 
 		var coolState = {};
 
-		Object.keys(transition.startState).forEach(k =>
-			coolState[k] = (transition.endState[k] - transition.startState[k]) * r + transition.startState[k]
-		);
+		Object.keys(transition.startState).forEach(k => {
+			if(transition.endState[k])
+				coolState[k] = (transition.endState[k] - transition.startState[k]) * r + transition.startState[k]
+		});
 
 		setState(coolState);
 	}	
 	
 	var p = onPlatform()
 	if(!onPlatform()){
-		falling = true;
-		upwardV -= 1;
+		falling = true;  
+		upwardV -= scale / 2;
 		
-		setState(jumping);
+		setState(running == -1 ? reflect(jumping) : jumping);
 	}else{
 		upwardV = 0;
 		guy.y = p.y - (scale * 50);
 	}
 
+	if(punching.end && Date.now() < punching.end){
+		setState(running == 1 || (!running && last == 1) ? punch : reflect(punch));
+	}
+
 	renderNode(guy);
 	renderPlatforms();
+}
+
+function reflect(state){
+	var coolState = {}
+	Object.keys(state).forEach(k => {
+		coolState[k] = 180 - state[k];
+		if(coolState[k] > 180){
+			coolState[k] = coolState[k] - 360;
+		}
+	});
+	return coolState
 }
 
 function onPlatform(){
@@ -244,9 +272,9 @@ function onPlatform(){
 	return platforms.find(p => {
 		var A = {x: p.sx, y: p.y}
 		var B = {x: p.ex, y: p.y}
-		var C = {x: guy.x, y: guy.y + (scale * 50)};
+		var C = {x: guy.x, y: guy.y + (scale * 50) - 10};
 		var D = {x: guy.x, y: guy.y + (scale * 50) - upwardV + 10};
-		console.log(ccw(A,C,D) != ccw(B,C,D) && ccw(A,B,C) != ccw(A,B,D));
+
 		return ccw(A,C,D) != ccw(B,C,D) && ccw(A,B,C) != ccw(A,B,D)
 	});
 }
