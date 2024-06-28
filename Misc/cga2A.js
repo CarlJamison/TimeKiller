@@ -159,32 +159,6 @@ function draw(event){
 	}
 }
 
-//No longer used
-function runFrame(){
-	var canvas = document.getElementById("myCanvas");
-	var ctx = canvas.getContext("2d");
-	ctx.putImageData(imgData, 0, 0);
-	ctx.fillStyle = "rgb(" + 255 + ", " + 255 + ", " + 255 + ")";
-	if(!paths.length){
-		paths = [Math.floor(Math.random() * height * width)];
-	}
-
-	paths.forEach(p => {
-		var r = Math.random();
-		p+= r < 0.33 ? 1 : r > 0.67 ? -1 : 0
-		var c = Math.random();
-		p+= c < 0.33 ? width : c > 0.67 ? -width : 0
-		var instCoord = p;
-		while(instruction[instCoord]){
-			var col = instCoord % width;
-			var row = Math.floor(instCoord / width);
-
-			ctx.fillRect(col * scale, row * scale, scale, scale);
-			instCoord = instruction[instCoord];
-		}	
-	});
-}
-
 function onClick(event){
 	var canvas = document.getElementById("myCanvas");
     var rect = canvas.getBoundingClientRect();
@@ -208,64 +182,41 @@ function render(iStart, jStart){
 	done = [];
 	reached = [];
 	
-	ready.push(iStart * c + jStart);
+	ready.push( { id: iStart * c + jStart, cost: 0 });
 	cost[iStart * c + jStart] = 0;
 	
-	for(var i = 0; i < r; i++) {
-		for(var iC = 0; iC < c; iC++) {
+	while(ready.length){
 		
-			//Get min
-			var minValue = cost[ready[0]];
-			var min = ready[0];
-			
-			ready.forEach(x => {
-				if(cost[x] < minValue) {
-					min = x;
-					minValue = cost[x];
+		var min = ready[0].id;
+		var minValue = cost[min];
+		
+		ready.forEach(x => {
+			if(x.cost < minValue) {
+				min = x.id;
+				minValue = x.cost;
+			}
+		});
+		
+		var index = ready.findIndex(x => x.id == min);
+		ready[index] = ready[ready.length - 1]
+		ready.pop();
+
+		done[min] = true;
+		
+		var cR = Math.floor(min / c);
+		var cC = min % c;
+
+		for(var i = -1; i <= 1; i++){
+			for(var j = -1; j <= 1; j++){
+				var distance = Math.abs(i) + Math.abs(j)
+				if(distance > 0 && cR + i > -1 && cR + i < r && cC + j > -1 && cC + j < c){
+					var norm = distance == 1 ? 1 : Math.sqrt(2);
+					addInstruction((cR + i) * c + cC + j, minValue + (norm * costField[cR + i][cC + j]), min, ready, done);
 				}
-			});
-			
-			var index = ready.indexOf(min);
-			ready.splice(index, 1);
-			done[min] = true;
-			
-			var cR = Math.floor(min / c);
-			var cC = min % c;
-			
-			if(cR > 0) {
-				addInstruction((cR - 1) * c + cC, minValue + costField[cR - 1][cC], min, ready, done);
 			}
-			
-			if(cR + 1 < r) {
-				addInstruction((cR + 1) * c + cC, minValue + costField[cR + 1][cC], min, ready, done);
-			}
-			
-			if(cC > 0) {
-				addInstruction(cR * c + cC - 1, minValue + costField[cR][cC - 1], min, ready, done);
-			}
-			
-			if(cC + 1 < c) {
-				addInstruction(cR * c + cC + 1, minValue + costField[cR][cC + 1], min, ready, done);
-			}
-			
-			if(cR > 0 && cC > 0) {
-				addInstruction((cR - 1) * c + cC - 1, minValue + (Math.sqrt(2) * costField[cR - 1][cC - 1]), min, ready, done);
-			}
-			
-			if(cR + 1 < r && cC + 1 < c) {
-				addInstruction((cR + 1) * c + cC + 1, minValue + (Math.sqrt(2) * costField[cR + 1][cC + 1]), min, ready, done);
-			}
-			
-			if(cR + 1 < r && cC > 0) {
-				addInstruction((cR + 1) * c + cC - 1, minValue + (Math.sqrt(2) * costField[cR + 1][cC - 1]), min, ready, done);
-			}
-			
-			if(cR > 0 && cC + 1 < c) {
-				addInstruction((cR - 1) * c + cC + 1, minValue + (Math.sqrt(2) * costField[cR - 1][cC + 1]), min, ready, done);
-			}
-			
-			max = minValue;
 		}
+		
+		max = minValue;
 	}
 
 	generateImage();
@@ -277,7 +228,7 @@ function addInstruction(newVal, currentCost, min, ready, done) {
 	var included = reached[newVal];
 	
 	if(!included){
-		ready.push(newVal);
+		ready.push({ id: newVal, cost: currentCost });
 		instruction[newVal] = min;
 		cost[newVal] = currentCost;
 		reached[newVal] = true;
