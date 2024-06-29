@@ -1,7 +1,6 @@
 var scale = 2;
 var width = 700;
 var height = 500;
-var reached = [];
 var instruction = [];
 var cost = [];
 var paths = [];
@@ -179,29 +178,24 @@ function render(iStart, jStart){
 	ready = [];
 	cost = []
 	instruction = [];
-	done = [];
-	reached = [];
 	
 	ready.push( { id: iStart * c + jStart, cost: 0 });
 	cost[iStart * c + jStart] = 0;
 	
 	while(ready.length){
+		var minValue = Infinity;
+		var index = 0;
 		
-		var min = ready[0].id;
-		var minValue = cost[min];
-		
-		ready.forEach(x => {
+		ready.forEach((x, i) => {
 			if(x.cost < minValue) {
-				min = x.id;
 				minValue = x.cost;
+				index = i;
 			}
 		});
 		
-		var index = ready.findIndex(x => x.id == min);
+		var min = ready[index].id;
 		ready[index] = ready[ready.length - 1]
 		ready.pop();
-
-		done[min] = true;
 		
 		var cR = Math.floor(min / c);
 		var cC = min % c;
@@ -211,7 +205,7 @@ function render(iStart, jStart){
 				var distance = Math.abs(i) + Math.abs(j)
 				if(distance > 0 && cR + i > -1 && cR + i < r && cC + j > -1 && cC + j < c){
 					var norm = distance == 1 ? 1 : Math.sqrt(2);
-					addInstruction((cR + i) * c + cC + j, minValue + (norm * costField[cR + i][cC + j]), min, ready, done);
+					addInstruction((cR + i) * c + cC + j, minValue + (norm * costField[cR + i][cC + j]), min);
 				}
 			}
 		}
@@ -220,22 +214,18 @@ function render(iStart, jStart){
 	}
 
 	generateImage();
-	//window.setInterval(runFrame, 100);
 }
 	
-function addInstruction(newVal, currentCost, min, ready, done) {
-	if(done[newVal]) return;
-	var included = reached[newVal];
+function addInstruction(newVal, newCost, min) {
+	var existingCost = cost[newVal];
 	
-	if(!included){
-		ready.push({ id: newVal, cost: currentCost });
+	if(existingCost == null){
+		ready.push({ id: newVal, cost: newCost });
 		instruction[newVal] = min;
-		cost[newVal] = currentCost;
-		reached[newVal] = true;
-	}else{
-		if(currentCost < cost[newVal]){
-			instruction[newVal] = min;
-			cost[newVal] = currentCost;
-		}
+		cost[newVal] = newCost;
+	}else if(existingCost > newCost){
+		ready.find(x => x.id == newVal).cost = newCost;
+		instruction[newVal] = min;
+		cost[newVal] = newCost;
 	}
 }
