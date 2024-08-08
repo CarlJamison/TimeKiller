@@ -1,7 +1,7 @@
-var scale = 5;
+var scale = 4;
 
 var horc = [];
-var horcs = ['D', 'S', 'H', 'O'];
+var horcs = ['D', 'S', 'H', 'C'];
 var sheet = [];
 var pallet = [];	
 
@@ -9,6 +9,8 @@ var mutCount = 0;
 var pseudo = 1;
 var DECOMPOSERS = true;
 var ENERGY_GAINED = 10;
+
+const EMPTY = ' ';
 
 var lastSheet = [];
 	
@@ -24,7 +26,7 @@ for(var i = 0; i < height; i++){
 	lastSheet[i] = [];
 }
 
-addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 10, lifetime: 500, horc: 'P', metabolism: 0.5, germ: 10, energy: 100, age: 0});
+addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 10, lifetime: 500, horc: 'P', metabolism: 0.2, germ: 10, energy: 100, age: 0});
 
 window.setInterval(runFrame, 1);
 
@@ -40,12 +42,13 @@ function runFrame(){
 				item.energy -= item.metabolism;
 
 			if (item.horc == 'P' && item.energy < item.entr)
-				item.energy++;
+				item.energy += 0.5;
 
 			if (item.horc == 'S' && item.age > item.germ)
 				item.horc = 'P';
 
-			if (item.energy <= 0 || item.age >= item.lifetime) {
+			//if (item.energy <= 0 || item.age >= item.lifetime) {
+			if (item.energy <= 0) {
 				killCreature(item);
 				return;
 			}
@@ -64,7 +67,7 @@ function runFrame(){
 	refreshCanvas();
 	
 	var totalTime = Date.now() - startTime;
-	console.log("Horc: " + horc.length + "		Speed: " + Math.floor(horc.length * 1000 / totalTime));
+	//console.log("Horc: " + horc.length + "		Speed: " + Math.floor(horc.length * 1000 / totalTime));
 }
 
 function reproduce(item) {
@@ -84,12 +87,9 @@ function reproduce(item) {
 			newHorc = horcs[Math.floor(Math.random() * horcs.length)];
 		}
 
-		mutCount++;
-		if (mutCount == 100) {
-			mutCount = 0;
-		}
+		mutCount = ++mutCount % 4000
 
-		item.energy *= 0.5;
+		item.energy *= 0.375;
 		addCreature({row: item.row + rowD, col: item.col + colD, entr: item.entr, lifetime: item.lifetime, horc: newHorc, metabolism: item.metabolism, germ: item.germ, energy: item.energy, age: 0});
 		return false;
 	}
@@ -125,37 +125,26 @@ function eat(item) {
 
 			return false;
 		}
-	}else if(item.horc == 'H'){
-		var vicrow = findSurroundingHorc('P', item.row, item.col); 
-		if (vicrow != null) { 
-			if (vicrow.energy < ENERGY_GAINED) { 
-				item.energy += vicrow.energy;
-				killCreature(vicrow, true)
-			} else { 
-				vicrow.energy -= ENERGY_GAINED;
-				item.energy += ENERGY_GAINED; 
+	}else if(item.horc == 'H' || item.horc == 'C'){
+		var vicrow = null;
+
+		if(item.horc == 'H'){
+			vicrow = findSurroundingHorc('P', item.row, item.col); 
+		}else if(item.horc == 'C'){
+			vicrow = findSurroundingHorc('H', item.row, item.col); 
+		
+			if(vicrow == null){
+				findSurroundingHorc('D', item.row, item.col); 
 			}
-			
-			return false;
 		}
-	}else if(item.horc == 'O'){
-		var vicrow = findSurroundingHorc('P', item.row, item.col); 
-		
-		if(vicrow = null){
-			findSurroundingHorc('H', item.row, item.col); 
-		}
-		
-		if(vicrow = null){
-			findSurroundingHorc('O', item.row, item.col); 
-		}
-		
+
 		if (vicrow != null) { 
-			if (vicrow.energy < ENERGY_GAINED) { 
-				item.energy += vicrow.energy;
-				killCreature(vicrow, true)
+			if (vicrow.energy < ENERGY_GAINED || item.horc == 'C') { 
+				item.energy += vicrow.energy * 0.75;
+				killCreature(vicrow, true);
 			} else { 
 				vicrow.energy -= ENERGY_GAINED;
-				item.energy += ENERGY_GAINED; 
+				item.energy += ENERGY_GAINED * 0.75; 
 			}
 			
 			return false;
@@ -165,15 +154,15 @@ function eat(item) {
 }
 
 function randomMovement(item) {
-	var random = getPsuedoRandom();
+	pseudo = ++pseudo % 4;
 
-	if (random == 1) {
+	if (pseudo == 0) {
 		move(item, item.row - 1, item.col);
-	} else if (random == 2) {
+	} else if (pseudo == 1) {
 		move(item, item.row, item.col + 1);
-	} else if (random == 3) {
+	} else if (pseudo == 2) {
 		move(item, item.row + 1, item.col);
-	} else if (random == 4) {
+	} else if (pseudo == 3) {
 		move(item, item.row, item.col - 1);
 	}
 }
@@ -226,16 +215,6 @@ function move(item, row, col){
 	return false;
 }
 
-function getPsuedoRandom() {
-	if (pseudo == 4) {
-		pseudo = 1;
-	} else {
-		pseudo++;
-	}
-
-	return pseudo;
-}
-
 function refreshCanvas(){
 	var lastVal = null;
 	
@@ -243,12 +222,13 @@ function refreshCanvas(){
 		for(var j = 0; j < height; j++){
 			
 			var item = sheet[j][i];
-			var value = item ? item.horc : ' ';
+			var value = item ? item.horc : EMPTY;
 			
 			if(value != lastSheet[j][i]){
 				if(value != lastVal){
 					if(!pallet[value]){
 						pallet[value] = "rgb(" + Math.random() * 256 + ", " + Math.random() * 256 + ", " + Math.random() * 256 + ")";
+						console.log(`%c ${value} `, `background: ${pallet[value]};`);
 					}
 					
 					ctx.fillStyle = pallet[value];
