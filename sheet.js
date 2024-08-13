@@ -1,8 +1,12 @@
-var scale = 4;
+var scale = 3;
 
 var horc = [];
 var horcs = ['D', 'S', 'H', 'C'];
+
+var horcSheet = [];
 var sheet = [];
+var lastSheet = [];
+
 var pallet = [];	
 
 var mutCount = 0;
@@ -11,8 +15,6 @@ var DECOMPOSERS = true;
 var ENERGY_GAINED = 10;
 
 const EMPTY = ' ';
-
-var lastSheet = [];
 	
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
@@ -24,28 +26,33 @@ canvas.height = height * scale;
 for(var i = 0; i < height; i++){
 	sheet[i] = [];
 	lastSheet[i] = [];
+	horcSheet[i] = [];
+	for(var j = 0; j < width; j++){
+		horcSheet[i][j] = EMPTY
+	}
 }
 
-addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 10, lifetime: 500, horc: 'P', metabolism: 0.2, germ: 10, energy: 100, age: 0});
+addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 20, lifetime: 500, horc: 'P', metabolism: 0.2, germ: 10, energy: 100, age: 0});
 
 window.setInterval(runFrame, 1);
+refreshCanvas();
 
 function runFrame(){
-	var startTime = Date.now();
-	
 	horc = horc.filter(i => !i.deleted);
 	horc.forEach(item => {
 		if(!item.deleted){
 				
 			item.age++;
-			if (item.horc != 'S')
+			if (item.horc != 'S' && item.horc != 'P')
 				item.energy -= item.metabolism;
 
 			if (item.horc == 'P' && item.energy < item.entr)
-				item.energy += 0.5;
+				item.energy += 0.3;
 
-			if (item.horc == 'S' && item.age > item.germ)
+			if (item.horc == 'S' && item.age > item.germ){
 				item.horc = 'P';
+				horcSheet[item.row][item.col] = item.horc;
+			}
 
 			//if (item.energy <= 0 || item.age >= item.lifetime) {
 			if (item.energy <= 0) {
@@ -64,14 +71,10 @@ function runFrame(){
 				randomMovement(item);
 		}
 	});	
-	refreshCanvas();
-	
-	var totalTime = Date.now() - startTime;
-	//console.log("Horc: " + horc.length + "		Speed: " + Math.floor(horc.length * 1000 / totalTime));
 }
 
 function reproduce(item) {
-	var loc = findSurroundingChar(' ', item.row, item.col);
+	var loc = findSurroundingChar(EMPTY, item.row, item.col);
 
 	if (loc != -1) {
 		var rowD = Math.floor(loc / 3 - 1);
@@ -100,13 +103,16 @@ function reproduce(item) {
 function addCreature(newHorc) {
 	horc.push(newHorc);
 	sheet[newHorc.row][newHorc.col] = newHorc;
+	horcSheet[newHorc.row][newHorc.col] = newHorc.horc;
 }
 
 function killCreature(killHorc, clear = false) {
 	if (DECOMPOSERS && !clear) {
 		killHorc.horc = 'X';
+		horcSheet[killHorc.row][killHorc.col] = 'X'
 	} else {
 		sheet[killHorc.row][killHorc.col] = null;
+		horcSheet[killHorc.row][killHorc.col] = EMPTY;
 	}
 
 	killHorc.deleted = true;
@@ -122,6 +128,7 @@ function eat(item) {
 			var colD = loc % 3 - 1;
 
 			sheet[item.row + rowD][item.col + colD] = null;
+			horcSheet[item.row + rowD][item.col + colD] = EMPTY;
 
 			return false;
 		}
@@ -194,19 +201,17 @@ function findSurroundingHorc(string, row, column) {
 }
 
 function get(row, col){
-	//return (row < 0 || row >= height || col < 0 || col >= width) ? '-' : sheet[row][col] ? sheet[row][col].horc : ' ';
-	if(row < 0 || row >= height || col < 0 || col >= width){
-		return '-';
-	}else{
-		var item = sheet[row][col];
-		return item ? item.horc : ' ';
-	}
+	return (row < 0 || row >= height || col < 0 || col >= width) ? 
+		'-' : horcSheet[row][col];
 }
 
 function move(item, row, col){
-	if ((get(row, col) == ' ')) {
+	if ((get(row, col) == EMPTY)) {
 		sheet[item.row][item.col] = null;
 		sheet[row][col] = item;
+
+		horcSheet[item.row][item.col] = EMPTY;
+		horcSheet[row][col] = item.horc;
 		item.row = row;
 		item.col = col;
 		return true;
@@ -218,16 +223,17 @@ function move(item, row, col){
 function refreshCanvas(){
 	var lastVal = null;
 	
-	for(var i = 0; i < width; i++){
-		for(var j = 0; j < height; j++){
+	for(var i = 0; i < height; i++){
+		var row = horcSheet[i];
+		var lastRow = lastSheet[i];
+
+		for(var j = 0; j < width; j++){
+			var value = row[j];
 			
-			var item = sheet[j][i];
-			var value = item ? item.horc : EMPTY;
-			
-			if(value != lastSheet[j][i]){
+			if(value != lastRow[j]){
 				if(value != lastVal){
 					if(!pallet[value]){
-						pallet[value] = "rgb(" + Math.random() * 256 + ", " + Math.random() * 256 + ", " + Math.random() * 256 + ")";
+						pallet[value] = '#' + Math.floor(Math.random()*16777215).toString(16);
 						console.log(`%c ${value} `, `background: ${pallet[value]};`);
 					}
 					
@@ -235,10 +241,11 @@ function refreshCanvas(){
 					lastVal = value;
 				}
 			
-				ctx.fillRect(i * scale, j * scale, scale, scale);
-				lastSheet[j][i] = value;
+				ctx.fillRect(j * scale, i * scale, scale, scale);
+				lastRow[j] = value;
 			}	
 		}
 	}
+	requestAnimationFrame(refreshCanvas);
 }
   
