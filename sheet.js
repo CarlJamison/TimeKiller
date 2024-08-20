@@ -1,4 +1,4 @@
-var scale = 1;
+var scale = 3;
 
 var horc = [];
 var horcs = ['D', 'S', 'H', 'C'];
@@ -183,10 +183,7 @@ function move(item, row, col){
 		horcSheet[row][col] = item.horc;
 		item.row = row;
 		item.col = col;
-		return true;
 	}
-
-	return false;
 }
 
 function refreshCanvas(){
