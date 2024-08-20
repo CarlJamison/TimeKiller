@@ -1,12 +1,7 @@
-var scale = 3;
+var scale = 1;
 
 var horc = [];
 var horcs = ['D', 'S', 'H', 'C'];
-
-var horcSheet = [];
-var sheet = [];
-var lastSheet = [];
-
 var pallet = [];	
 
 var mutCount = 0;
@@ -23,14 +18,19 @@ var height = Math.floor(window.innerHeight / scale);
 canvas.width = width * scale;
 canvas.height = height * scale;
 
+var horcSheet = [];
+var sheet = [];
+var lastSheet = [];
 for(var i = 0; i < height; i++){
 	sheet[i] = [];
 	lastSheet[i] = [];
 	horcSheet[i] = [];
 	for(var j = 0; j < width; j++){
-		horcSheet[i][j] = EMPTY
+		horcSheet[i][j] = EMPTY;
 	}
 }
+
+const DIRECTIONS = [{r: -1, c: 0}, {r: 0, c: 1}, {r: 1, c: 0}, {r: 0, c: -1}];
 
 addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 20, lifetime: 500, horc: 'P', metabolism: 0.2, germ: 10, energy: 100, age: 0});
 
@@ -38,48 +38,41 @@ window.setInterval(runFrame, 1);
 refreshCanvas();
 
 function runFrame(){
-	horc = horc.filter(i => !i.deleted);
 	horc.forEach(item => {
-		if(!item.deleted){
-				
-			item.age++;
-			if (item.horc != 'S' && item.horc != 'P')
-				item.energy -= item.metabolism;
+		item.age++;
+		if (item.horc != 'S' && item.horc != 'P')
+			item.energy -= item.metabolism;
 
-			if (item.horc == 'P' && item.energy < item.entr)
-				item.energy += 0.3;
+		if (item.horc == 'P' && item.energy < item.entr)
+			item.energy += 0.3;
 
-			if (item.horc == 'S' && item.age > item.germ){
-				item.horc = 'P';
-				horcSheet[item.row][item.col] = item.horc;
-			}
-
-			//if (item.energy <= 0 || item.age >= item.lifetime) {
-			if (item.energy <= 0) {
-				killCreature(item);
-				return;
-			}
-
-			var z = true;
-			if (item.energy >= item.entr && item.horc != 'S')
-				z = reproduce(item);
-
-			if (z && item.horc != 'P' && item.horc != 'S')
-				z = eat(item);
-
-			if (z && item.horc != 'P')
-				randomMovement(item);
+		if (item.horc == 'S' && item.age > item.germ){
+			item.horc = 'P';
+			horcSheet[item.row][item.col] = item.horc;
 		}
+
+		//if (item.energy <= 0 || item.age >= item.lifetime) {
+		if (item.energy <= 0) {
+			killCreature(item);
+			return;
+		}
+
+		var z = true;
+		if (item.energy >= item.entr && item.horc != 'S')
+			z = reproduce(item);
+
+		if (z && item.horc != 'P' && item.horc != 'S')
+			z = eat(item);
+
+		if (z && item.horc != 'P')
+			randomMovement(item);
 	});	
 }
 
 function reproduce(item) {
-	var loc = findSurroundingChar(EMPTY, item.row, item.col);
+	var d = findSurroundingChar(EMPTY, item.row, item.col);
 
-	if (loc != -1) {
-		var rowD = Math.floor(loc / 3 - 1);
-		var colD = loc % 3 - 1;
-		
+	if (d) {
 		var newHorc = item.horc;
 		if (newHorc == 'P') {
 			newHorc = 'S';
@@ -90,10 +83,12 @@ function reproduce(item) {
 			newHorc = horcs[Math.floor(Math.random() * horcs.length)];
 		}
 
-		mutCount = ++mutCount % 4000
+		mutCount = ++mutCount % 4000;
 
 		item.energy *= 0.375;
-		addCreature({row: item.row + rowD, col: item.col + colD, entr: item.entr, lifetime: item.lifetime, horc: newHorc, metabolism: item.metabolism, germ: item.germ, energy: item.energy, age: 0});
+		addCreature({row: item.row + d.r, col: item.col + d.c, entr: item.entr, 
+			lifetime: item.lifetime, horc: newHorc, metabolism: item.metabolism, 
+			germ: item.germ, energy: item.energy, age: 0});
 		return false;
 	}
 
@@ -107,28 +102,28 @@ function addCreature(newHorc) {
 }
 
 function killCreature(killHorc, clear = false) {
-	if (DECOMPOSERS && !clear) {
+	if(DECOMPOSERS && !clear){
 		killHorc.horc = 'X';
-		horcSheet[killHorc.row][killHorc.col] = 'X'
+		horcSheet[killHorc.row][killHorc.col] = 'X';
 	} else {
 		sheet[killHorc.row][killHorc.col] = null;
 		horcSheet[killHorc.row][killHorc.col] = EMPTY;
 	}
 
-	killHorc.deleted = true;
+	//Remove from list
+	horc[horc.indexOf(killHorc)] = horc[horc.length - 1];
+	horc.pop();
 }
 
 function eat(item) {
 	if (item.horc == 'D') {
-		var loc = findSurroundingChar('X', item.row, item.col);
+		var d = findSurroundingChar('X', item.row, item.col);
 
-		if (loc != -1) { // if found
+		if (d) { // if found
 			item.energy += 3;
-			var rowD = Math.floor(loc / 3 - 1);
-			var colD = loc % 3 - 1;
 
-			sheet[item.row + rowD][item.col + colD] = null;
-			horcSheet[item.row + rowD][item.col + colD] = EMPTY;
+			sheet[item.row + d.r][item.col + d.c] = null;
+			horcSheet[item.row + d.r][item.col + d.c] = EMPTY;
 
 			return false;
 		}
@@ -162,42 +157,16 @@ function eat(item) {
 
 function randomMovement(item) {
 	pseudo = ++pseudo % 4;
-
-	if (pseudo == 0) {
-		move(item, item.row - 1, item.col);
-	} else if (pseudo == 1) {
-		move(item, item.row, item.col + 1);
-	} else if (pseudo == 2) {
-		move(item, item.row + 1, item.col);
-	} else if (pseudo == 3) {
-		move(item, item.row, item.col - 1);
-	}
+	move(item, item.row + DIRECTIONS[pseudo].r, item.col + DIRECTIONS[pseudo].c);
 }
 
 function findSurroundingChar(string, row, column) {
-	if (get(row - 1, column) == string) {
-		return 1;
-	} else if (get(row, column + 1) == string) {
-		return 5;
-	} else if (get(row + 1, column) == string) {
-		return 7;
-	} else if (get(row, column - 1) == string) {
-		return 3;
-	}
-	return -1;
+	return DIRECTIONS.find(d => get(row + d.r, column + d.c) == string);
 }
 
 function findSurroundingHorc(string, row, column) {
-	if (get(row - 1, column) == string) {
-		return sheet[row - 1][column];
-	} else if (get(row, column + 1) == string) {
-		return sheet[row][column + 1];
-	} else if (get(row + 1, column) == string) {
-		return sheet[row + 1][column];
-	} else if (get(row, column - 1) == string) {
-		return sheet[row][column - 1];
-	}
-	return null;
+	var d = findSurroundingChar(string, row, column);
+	return d ? sheet[row + d.r][column + d.c] : null;
 }
 
 function get(row, col){
@@ -206,7 +175,7 @@ function get(row, col){
 }
 
 function move(item, row, col){
-	if ((get(row, col) == EMPTY)) {
+	if (get(row, col) == EMPTY) {
 		sheet[item.row][item.col] = null;
 		sheet[row][col] = item;
 
@@ -248,4 +217,3 @@ function refreshCanvas(){
 	}
 	requestAnimationFrame(refreshCanvas);
 }
-  
