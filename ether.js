@@ -1,5 +1,4 @@
-var scale = 5;
-var range = 5;
+var scale = 2;
 var sheet = [];	
 var pallet = [
 	"#f2f6f0",
@@ -22,60 +21,51 @@ for(var i = 0; i < height; i++){
 
 	sheet[i] = [];
 	for(var j = 0; j < width; j++){
-		sheet[i][j] = Math.floor(Math.random() * range)
+		sheet[i][j] = Math.floor(Math.random() * pallet.length)
 	}
 }
 
 window.setInterval(runFrame, 1);
+refreshCanvas();
 
-function addPixel(row, col, list){
-	if(row >= 0 && row < height && col >= 0 && col < width)
-		list.push(sheet[row][col])
-}
-
+var counter = 0;
 function runFrame(){
+	for(var i = 0; i < 30000; i++){
+		var row = Math.floor(Math.random() * (height - 2)) + 1;
+		var col = Math.floor(Math.random() * (width - 2)) + 1;
+		
+		counter = ++counter % 8;
+		var d = [{r: -1, c: 0}, {r: -1, c: 1}, {r: 0, c: 1}, {r: 1, c: 1}, 
+			{r: 1, c: 0}, {r: 1, c: -1}, {r: 0, c: -1}, {r: -1, c: -1}][counter]
 
-	for(var i = 0; i < 2000; i++){
-		var row = Math.floor(Math.random() * height);
-		var col = Math.floor(Math.random() * width);
 
-		var surrList = [];
-		for(var k = -1; k <= 1; k++){
-			for(var j = -1; j <= 1; j++){
-				if(k != 0 || j != 0) 
-					addPixel(row + k, col + j, surrList);
-			}
-		}
-
-		sheet[row][col] = surrList[Math.floor(Math.random() * surrList.length)];
+		sheet[row][col] = sheet[row + d.r][col + d.c];
 	}
-
-	refreshCanvas();
 }
 
 function refreshCanvas(){
 	var lastVal = null;
 	
-	for(var i = 0; i < width; i++){
-		for(var j = 0; j < height; j++){
+	for(var i = 0; i < height; i++){
+		var row = sheet[i];
+		var lastRow = lastSheet[i];
+
+		for(var j = 0; j < width; j++){
 			
-			var value = sheet[j][i];
+			var value = row[j];
 			
-			if(value != lastSheet[j][i]){
+			if(value != lastRow[j]){
 				if(value != lastVal){
-					if(!pallet[value]){
-						pallet[value] = "rgb(" + Math.random() * 256 + ", " + Math.random() * 256 + ", " + Math.random() * 256 + ")";
-					}
-					
 					ctx.fillStyle = pallet[value];
-					
 					lastVal = value;
 				}
 			
-				ctx.fillRect(i * scale, j * scale, scale, scale);
-				lastSheet[j][i] = value;
+				ctx.fillRect(j * scale, i * scale, scale, scale);
+				lastRow[j] = value;
 			}	
 		}
 	}
+	
+	requestAnimationFrame(refreshCanvas);
 }
   
