@@ -8,22 +8,16 @@ var ctx = canvas.getContext("2d");
 var width = canvas.width = window.innerWidth;
 var height = canvas.height = window.innerHeight;
 
-var pallet = ["#f2f6f0", "#a4befd", "#283dae", "#04073d", "#929383"]
-var sheet = [];	
-for(var i = 0; i < height; i++){
-	sheet[i] = [];
-	for(var j = 0; j < width; j++){
-		sheet[i][j] = pallet[Math.floor(Math.random() * pallet.length)]
-	}
-}
-
+var pickColor = () => ["#f2f6f0", "#a4befd", "#283dae", "#04073d", "#929383"][Math.floor(Math.random() * 5)];
+var sheet = Array.from(Array(height), () => Array.from(Array(width), pickColor));
 var counter = 0;
 var lastVal = null;
 
 runFrame();
 
 function runFrame(){
-	for(var i = 0; i < 10000; i++){
+    var start = Date.now();
+	while(Date.now() - start < 20){
 		var row = Math.floor(Math.random() * (height - 2)) + 1;
 		var col = Math.floor(Math.random() * (width - 2)) + 1;
 		

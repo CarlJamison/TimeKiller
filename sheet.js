@@ -18,17 +18,9 @@ var height = Math.floor(window.innerHeight / scale);
 canvas.width = width * scale;
 canvas.height = height * scale;
 
-var horcSheet = [];
-var sheet = [];
-var lastSheet = [];
-for(var i = 0; i < height; i++){
-	sheet[i] = [];
-	lastSheet[i] = [];
-	horcSheet[i] = [];
-	for(var j = 0; j < width; j++){
-		horcSheet[i][j] = EMPTY;
-	}
-}
+var horcSheet = Array.from(Array(height),  () => Array(width).fill(EMPTY));
+var sheet = Array.from(Array(height),  () => Array(width));
+var lastSheet = Array.from(Array(height),  () => Array(width));
 
 const DIRECTIONS = [{r: -1, c: 0}, {r: 0, c: 1}, {r: 1, c: 0}, {r: 0, c: -1}];
 
