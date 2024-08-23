@@ -8,22 +8,42 @@ var ctx = canvas.getContext("2d");
 var width = canvas.width = window.innerWidth;
 var height = canvas.height = window.innerHeight;
 
-var pallet = ["#f2f6f0", "#a4befd", "#283dae", "#04073d", "#929383"]
+const RADIUS = 2;
+const SPLATTER_COLOR = '#00ff00' //#' + Math.floor(Math.random()*16777215).toString(16);
+var lastVal = "#000000";
 var sheet = [];	
 for(var i = 0; i < height; i++){
 	sheet[i] = [];
 	for(var j = 0; j < width; j++){
-		sheet[i][j] = pallet[Math.floor(Math.random() * pallet.length)]
+		sheet[i][j] = lastVal;
 	}
 }
 
+ctx.fillStyle = lastVal;
+ctx.fillRect(0, 0, width, height);
+
 var counter = 0;
-var lastVal = null;
 
 runFrame();
+window.addEventListener("mousemove", interact);
+
+function interact(event){
+    var rect = canvas.getBoundingClientRect();
+    var row = event.clientY - rect.top;
+    var col = event.clientX;
+
+    for(var i = -RADIUS; i <= RADIUS; i++){
+        for(var j = -RADIUS; j <= RADIUS; j++){
+            sheet[row + i][col + j] = SPLATTER_COLOR;
+        }
+    }
+
+    ctx.fillStyle = lastVal = SPLATTER_COLOR;
+    ctx.fillRect(col - RADIUS, row - RADIUS, RADIUS * 2, RADIUS * 2);
+}
 
 function runFrame(){
-	for(var i = 0; i < 10000; i++){
+	for(var i = 0; i < 100000; i++){
 		var row = Math.floor(Math.random() * (height - 2)) + 1;
 		var col = Math.floor(Math.random() * (width - 2)) + 1;
 		
@@ -43,7 +63,6 @@ function runFrame(){
 		
 			ctx.fillRect(col, row, 1, 1);
 		}
-		
 	}
 
 	requestAnimationFrame(runFrame);
