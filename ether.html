@@ -3,43 +3,37 @@
 <body style="overflow: hidden; margin:0">
 <canvas id="myCanvas"></canvas>
 <script>
-var canvas = document.getElementById("myCanvas");
-var ctx = canvas.getContext("2d");
-var width = canvas.width = window.innerWidth;
-var height = canvas.height = window.innerHeight;
-
-var pickColor = () => ["#f2f6f0", "#a4befd", "#283dae", "#04073d", "#929383"][Math.floor(Math.random() * 5)];
-var sheet = Array.from(Array(height), () => Array.from(Array(width), pickColor));
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+const width = canvas.width = window.innerWidth;
+const height = canvas.height = window.innerHeight;
+const data = ctx.createImageData(width,height);
+const buf = new Uint32Array(data.data.buffer);
+const DIRECTIONS = [{r: -1, c: 0}, {r: -1, c: 1}, {r: 0, c: 1}, {r: 1, c: 1}, 
+{r: 1, c: 0}, {r: 1, c: -1}, {r: 0, c: -1}, {r: -1, c: -1}];
+const pickColor = () => "0xFF" + ["f0f6f2", "fdbea4", "ae3d28", "3d0704", "839392"][Math.floor(Math.random() * 5)];
+const sheet = Array.from(Array(height), () => Array.from(Array(width), pickColor));
 var counter = 0;
-var lastVal = null;
 
 runFrame();
 
-function runFrame(){
-    var start = Date.now();
-	while(Date.now() - start < 20){
-		var row = Math.floor(Math.random() * (height - 2)) + 1;
-		var col = Math.floor(Math.random() * (width - 2)) + 1;
-		
-		counter = ++counter % 8;
-		var d = [{r: -1, c: 0}, {r: -1, c: 1}, {r: 0, c: 1}, {r: 1, c: 1}, 
-			{r: 1, c: 0}, {r: 1, c: -1}, {r: 0, c: -1}, {r: -1, c: -1}][counter]
+function runFrame(start){
+	while(performance.now() - start < 20){
+		for(var i = 0; i < 1000; i++){
+			
+			var col = Math.floor(Math.random() * (width - 2)) + 1;
+			var row = Math.floor(Math.random() * (height - 2)) + 1;
+			var d = DIRECTIONS[++counter % 8]
 
-		var value = sheet[row + d.r][col + d.c];
+			var value = sheet[row + d.r][col + d.c];
 
-		if(sheet[row][col] != value){
-			sheet[row][col] = value;
-		
-			if(value != lastVal){
-				ctx.fillStyle = value;
-				lastVal = value;
+			if(sheet[row][col] != value){
+				sheet[row][col] = buf[row * width + col] = value;
 			}
-		
-			ctx.fillRect(col, row, 1, 1);
 		}
-		
 	}
-
+	
+	ctx.putImageData(data,0,0);
 	requestAnimationFrame(runFrame);
 }
 </script>
