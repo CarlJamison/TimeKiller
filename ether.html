@@ -12,18 +12,16 @@ const buf = new Uint32Array(data.data.buffer);
 buf.forEach((_, i) => buf[i] = "0xFF" + ["f0f6f2", "fdbea4", "ae3d28", "3d0704", "839392"][~~(Math.random() * 5)])
 const DIRECTIONS = [{r: -1, c: 0}, {r: -1, c: 1}, {r: 0, c: 1}, {r: 1, c: 1}, 
 {r: 1, c: 0}, {r: 1, c: -1}, {r: 0, c: -1}, {r: -1, c: -1}].map(d => d.r * width + d.c);
-
+const PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
 runFrame();
-
 function runFrame(start){
 	while(performance.now() - start < 20){
+		let start = ~~(Math.random() * buf.length)
 		for(let i = 0; i < 1000; i++){
-			let pixel = ~~(Math.random() * buf.length);
-			let value = buf[pixel + DIRECTIONS[i % 8]];
-			buf[pixel] = value ?? buf[pixel];
+			let pixel = PIXEL_LIST[(start + i) % buf.length];
+			buf[pixel + DIRECTIONS[i % 8]] = buf[pixel];
 		}
 	}
-
 	ctx.putImageData(data,0,0);
 	requestAnimationFrame(runFrame);
 }
