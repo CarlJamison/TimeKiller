@@ -1,80 +1,66 @@
-var scale = 2;
-var width = 700;
-var height = 500;
+const scale = 2;
 var instruction = [];
 var cost = [];
 var paths = [];
-var max = 0.0
-var imgData;
+var max = 0.0;
 var paths = [];
 var mode = "COST";
-var costField;
+const DIRECTIONS = [{r: -1, c: 0}, {r: -1, c: 1}, {r: 0, c: 1}, {r: 1, c: 1}, 
+	{r: 1, c: 0}, {r: 1, c: -1}, {r: 0, c: -1}, {r: -1, c: -1}];
 
-window.onload = function init(){
-	window.addEventListener("mousedown", onClick);
-	window.addEventListener("mousemove", draw);
-	
-	window.addEventListener("keydown" ,function(event){
-        switch(event.key) {
-            case "a":
-                //paths.push(Math.floor(Math.random() * height * width))
-                break;
-			case "q":
-				if(mode != "COST"){
-					mode = "COST";
-					generateImage();
-				}
-                break;
-			case "w":
-                if(mode != "TOTAL_COST"){
-					mode = "TOTAL_COST";
-					generateImage();
-				}
-                break;
-			case "e":
-				if(mode != "PATHS"){
-					mode = "PATHS";
-					generateImage();
-				}
-				break;
-			case "r":
-				if(mode != "COMBINED"){
-					mode = "COMBINED";
-					generateImage();
-				}
-				break;
-        }
-    });
+const width = Math.floor(window.innerWidth / scale);
+const height = Math.floor(window.innerHeight / scale);
 
-	width = Math.floor((window.innerWidth - 20) / scale);
-	height = Math.floor((window.innerHeight - 20) / scale);
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = width * scale;
+canvas.height = height * scale;
+var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-	var canvas = document.getElementById("myCanvas");
-	canvas.width = width * scale;
-	canvas.height = height * scale;
+const costField = Array.from(Array(height), () => Array.from(Array(width), Math.random));
 
-	costField = [];
-	for (var i = 0; i < height; i++) {
-		costField[i] = [];
-		for (var j = 0; j < width; j++) {
-			costField[i][j] = Math.random();
-		}
+addEventListener("mousedown", onClick);
+addEventListener("mousemove", draw);
+addEventListener("keydown", event => {
+	switch(event.key) {
+		case "q":
+			if(mode != "COST"){
+				mode = "COST";
+				generateImage();
+			}
+			break;
+		case "w":
+			if(mode != "TOTAL_COST"){
+				mode = "TOTAL_COST";
+				generateImage();
+			}
+			break;
+		case "e":
+			if(mode != "PATHS"){
+				mode = "PATHS";
+				generateImage();
+			}
+			break;
+		case "r":
+			if(mode != "COMBINED"){
+				mode = "COMBINED";
+				generateImage();
+			}
+			break;
 	}
-	render(Math.floor(height / 2), Math.floor(width / 2));
-}
+});
+
+render(Math.floor(height / 2), Math.floor(width / 2));
 
 function generateImage(){
-		
-	var canvas = document.getElementById("myCanvas");
-	var ctx = canvas.getContext("2d");
 
 	if(mode == "COST"){
 		for(var i = 0; i < width; i++){
 			for(var j = 0; j < height; j++){
 				
 				var value = 256 * costField[j][i];
-			
-				ctx.fillStyle = "rgb(" + value + ", " + value + ", " + value + ")";
+
+				ctx.fillStyle = `rgb(${value},${value},${value}`;
 				ctx.fillRect(i * scale, j * scale, scale, scale);
 			}
 		}
@@ -84,7 +70,7 @@ function generateImage(){
 				
 				var value = 256 - (cost[i + (j * width)] / max * 256)
 			
-				ctx.fillStyle = "rgb(" + value + ", " + value + ", " + value + ")";
+				ctx.fillStyle = `rgb(${value},${value},${value}`;
 				ctx.fillRect(i * scale, j * scale, scale, scale);
 			}
 		}
@@ -106,7 +92,7 @@ function generateImage(){
 		for(var i = 0; i < width; i++){
 			for(var j = 0; j < height; j++){
 				var value = 256 * Math.pow(hitList[i + (j * width)] / maxInst, .25);
-				ctx.fillStyle = "rgb(" + value + ", " + value + ", " + value + ")";
+				ctx.fillStyle = `rgb(${value},${value},${value}`;
 				ctx.fillRect(i * scale, j * scale, scale, scale);
 			}
 		}
@@ -129,24 +115,23 @@ function generateImage(){
 			for(var j = 0; j < height; j++){
 				var value = 256 * Math.sqrt(hitList[i + (j * width)] / maxInst) + (256 - (cost[i + (j * width)] / max * 256))
 				value = value > 255 ? 255 : value;
-				ctx.fillStyle = "rgb(" + value + ", " + value + ", " + value + ")";
+				ctx.fillStyle = `rgb(${value},${value},${value}`;
 				ctx.fillRect(i * scale, j * scale, scale, scale);
 			}
 		}
 	}
-	
+
 	imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
 }
 
 function draw(event){
-	var canvas = document.getElementById("myCanvas");
-	var ctx = canvas.getContext("2d");
 	ctx.putImageData(imgData, 0, 0);
     var rect = canvas.getBoundingClientRect();
 	var r = Math.floor((event.clientY - rect.top) / scale);
 	var c = Math.floor(event.clientX / scale);
 
-	ctx.fillStyle = "rgb(" + 255 + ", " + 255 + ", " + 255 + ")";
+	ctx.fillStyle = "rgb(255, 255, 255)";
 
 	var instCoord = (r * width) + c;
 	while(instruction[instCoord]){
@@ -170,50 +155,36 @@ function onClick(event){
 }
 
 function render(iStart, jStart){
-	var r = height;
-	var c = width;
+	let start = Date.now();
+	const r = height;
+	const c = width;
 	
-	max = 0.0;
-	
-	ready = [];
-	cost = []
+	ready = [{ id: iStart * c + jStart, cost: 0 }];
+	cost = [];
+	cost[iStart * c + jStart] = 0;
 	instruction = [];
 	
-	ready.push( { id: iStart * c + jStart, cost: 0 });
-	cost[iStart * c + jStart] = 0;
-	
 	while(ready.length){
-		var minValue = Infinity;
-		var index = 0;
+		const min = ready.reduce(
+			(min, x, index) => x.cost < min.cost ? {index, cost: x.cost, id: x.id} : min, { cost: Infinity });
+
+		ready[min.index] = ready[ready.length - 1];
+		ready.pop();
 		
-		ready.forEach((x, i) => {
-			if(x.cost < minValue) {
-				minValue = x.cost;
-				index = i;
+		const cR = Math.floor(min.id / c);
+		const cC = min.id % c;
+
+		DIRECTIONS.forEach(d => {
+			const norm = (Math.abs(d.r) + Math.abs(d.c)) == 1 ? 1 : Math.sqrt(2);
+			if(cR + d.r > -1 && cR + d.r < r && cC + d.c > -1 && cC + d.c < c){
+				addInstruction((cR + d.r) * c + cC + d.c, min.cost + (norm * costField[cR + d.r][cC + d.c]), min.id);
 			}
 		});
 		
-		var min = ready[index].id;
-		ready[index] = ready[ready.length - 1]
-		ready.pop();
-		
-		var cR = Math.floor(min / c);
-		var cC = min % c;
-
-		for(var i = -1; i <= 1; i++){
-			for(var j = -1; j <= 1; j++){
-				var distance = Math.abs(i) + Math.abs(j)
-				if(distance > 0 && cR + i > -1 && cR + i < r && cC + j > -1 && cC + j < c){
-					var norm = distance == 1 ? 1 : Math.sqrt(2);
-					addInstruction((cR + i) * c + cC + j, minValue + (norm * costField[cR + i][cC + j]), min);
-				}
-			}
-		}
-		
-		max = minValue;
+		max = min.cost;
 	}
-
 	generateImage();
+	console.log(Date.now() - start);
 }
 	
 function addInstruction(newVal, newCost, min) {
