@@ -3,13 +3,14 @@ var cost = [];
 var paths = [];
 var max = 0.0;
 var paths = [];
-var mode = "q";
+var mode = "w";
 const DIRECTIONS = [{r: -1, c: 0}, {r: -1, c: 1}, {r: 0, c: 1}, {r: 1, c: 1}, 
 	{r: 1, c: 0}, {r: 1, c: -1}, {r: 0, c: -1}, {r: -1, c: -1}];
 
 const canvas = document.getElementById("myCanvas");
 const width = canvas.width = window.innerWidth;
 const height = canvas.height = window.innerHeight;
+const boundTop = canvas.getBoundingClientRect().top;
 const ctx = canvas.getContext("2d");
 ctx.fillStyle = "rgb(255, 255, 255)";
 const imgData = ctx.getImageData(0, 0, width, height);
@@ -17,12 +18,12 @@ const buf = new Uint32Array(imgData.data.buffer);
 
 const costField = Array.from(Array(height * width), Math.random);
 
-addEventListener("mousedown", onClick);
+addEventListener("mousedown", e => renderMap(e.clientY - boundTop, e.clientX));
 addEventListener("mousemove", draw);
 addEventListener("keydown", event => {
 	if("qwer".indexOf(event.key) > -1 && mode != event.key){
 		mode = event.key;
-		generateImage()
+		generateImage();
 	}
 });
 
@@ -31,13 +32,9 @@ renderMap(0, 0);
 function generateImage(){
 
 	if(mode == "q"){
-		for(let i = 0; i < height * width; i++){
-			render(i, costField[i]);
-		}
+		costField.forEach((v, i) => render(i, v));
 	}else if(mode == "w"){
-		for(let i = 0; i < height * width; i++){
-			render(i, 1 - (cost[i] / max))
-		}
+		cost.forEach((v, i) => render(i, 1 - (v / max)))
 	}else if(mode == "e" || mode == "r"){
 		let hitList = Array(width * height).fill(0);
 		for(let i = 0; i < width * height; i++){
@@ -47,13 +44,9 @@ function generateImage(){
 		let maxInst = hitList.reduce((max, h) => max = h > max ? h : max, 0);
 
 		if(mode == "e"){
-			for(let i = 0; i < height * width; i++){
-				render(i, (hitList[i] / maxInst) ** .2);
-			}
+			hitList.forEach((v, i) => render(i, (v / maxInst) ** .2))
 		}else{
-			for(let i = 0; i < height * width; i++){
-				render(i, Math.min(1, ((hitList[i] / maxInst) ** .5) + (1 - (cost[i] / max))));
-			}
+			hitList.forEach((v, i) => render(i, Math.min(1, (v / maxInst) ** .5 + 1 - cost[i] / max)));
 		}
 	}
 
@@ -67,23 +60,13 @@ function render(i, raw){
 
 function draw(event){
 	ctx.putImageData(imgData,0,0);
-    var rect = canvas.getBoundingClientRect();
-	var r = event.clientY - rect.top;
-	var c = event.clientX;
 
-	var instCoord = (r * width) + c;
+	var instCoord = ((event.clientY - boundTop) * width) + event.clientX;
 	while(instCoord = instruction[instCoord]){
 		var col = instCoord % width;
 		var row = Math.floor(instCoord / width);
 		ctx.fillRect(col, row, 1, 1);
 	}
-}
-
-function onClick(event){
-    var rect = canvas.getBoundingClientRect();
-    var y = event.clientY - rect.top;
-    var x = event.clientX;
-	renderMap(y, x);
 }
 
 function renderMap(iStart, jStart){
@@ -121,7 +104,7 @@ function renderMap(iStart, jStart){
 	
 function addInstruction(newVal, newCost, min) {
 	var existingCost = cost[newVal];
-	
+
 	if(existingCost == null){
 		ready.push({ id: newVal, cost: newCost });
 		instruction[newVal] = min;
