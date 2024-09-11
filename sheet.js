@@ -1,86 +1,66 @@
-var scale = 3;
-
-var horc = [];
-var horcs = ['D', 'S', 'H', 'C'];
-var pallet = [];	
+const scale = 3;
+const EMPTY = ' ';
+const horcs = ['D', 'P', 'H', 'C'];
+const pallet = [];
+[...horcs, 'S', 'X', EMPTY].forEach(h => {
+	pallet[h] = '#' + ~~(Math.random()*16777215).toString(16);
+	console.log(`%c ${h} `, `background: ${pallet[h]};`);
+});	
+const DIRECTIONS = [{r: -1, c: 0}, {r: 0, c: 1}, {r: 1, c: 0}, {r: 0, c: -1}];
+const ENERGY_GAINED = 10;
 
 var mutCount = 0;
 var pseudo = 1;
-var DECOMPOSERS = true;
-var ENERGY_GAINED = 10;
-
-const EMPTY = ' ';
 	
-var canvas = document.getElementById("myCanvas");
-var ctx = canvas.getContext("2d");
-var width = Math.floor(window.innerWidth / scale);
-var height = Math.floor(window.innerHeight / scale);
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+const width = ~~(window.innerWidth / scale);
+const height = ~~(window.innerHeight / scale);
 canvas.width = width * scale;
 canvas.height = height * scale;
 
-var horcSheet = Array.from(Array(height),  () => Array(width).fill(EMPTY));
-var sheet = Array.from(Array(height),  () => Array(width));
-var lastSheet = Array.from(Array(height),  () => Array(width));
+const horcSheet = Array.from(Array(height),  (_,i)  => 
+	[0, height - 1].includes(i) ? Array(width).fill('-') : Array.from(Array(width), (_, j) => [0, width - 1].includes(j) ? '-' : EMPTY));
+const sheet = Array.from(Array(height),  () => Array(width));
+const lastSheet = Array.from(Array(height),  () => Array(width));
 
-const DIRECTIONS = [{r: -1, c: 0}, {r: 0, c: 1}, {r: 1, c: 0}, {r: 0, c: -1}];
-
-addCreature({row: Math.floor(height / 2), col: Math.floor(width / 2), entr: 20, lifetime: 500, horc: 'P', metabolism: 0.2, germ: 10, energy: 100, age: 0});
+const horc = [];
+addCreature({row: ~~(height / 2), col: ~~(width / 2), entr: 20, horc: 'P', energy: 100, age: 0});
 
 window.setInterval(runFrame, 1);
 refreshCanvas();
 
 function runFrame(){
 	horc.forEach(item => {
-		item.age++;
-		if (item.horc != 'S' && item.horc != 'P')
-			item.energy -= item.metabolism;
-
-		if (item.horc == 'P' && item.energy < item.entr)
-			item.energy += 0.3;
-
-		if (item.horc == 'S' && item.age > item.germ){
+		if (item.horc != 'S' && item.horc != 'P') item.energy -= 0.2;
+		if (item.horc == 'P' && item.energy < 20) item.energy += 0.3;
+		if (item.horc == 'S' && item.age++ > 10){
 			item.horc = 'P';
 			horcSheet[item.row][item.col] = item.horc;
 		}
 
-		//if (item.energy <= 0 || item.age >= item.lifetime) {
 		if (item.energy <= 0) {
 			killCreature(item);
 			return;
 		}
 
-		var z = true;
-		if (item.energy >= item.entr && item.horc != 'S')
-			z = reproduce(item);
-
-		if (z && item.horc != 'P' && item.horc != 'S')
-			z = eat(item);
-
-		if (z && item.horc != 'P')
-			randomMovement(item);
+		let z = true;
+		if (z && item.energy >= 20 && item.horc != 'S') z = reproduce(item);
+		if (z && item.horc != 'P' && item.horc != 'S') z = eat(item);
+		if (z && item.horc != 'P') z = randomMovement(item);
 	});	
 }
 
 function reproduce(item) {
-	var d = findSurroundingChar(EMPTY, item.row, item.col);
-
-	if (d) {
-		var newHorc = item.horc;
-		if (newHorc == 'P') {
-			newHorc = 'S';
-		}
-
-		// if ((int) (Math.random() * 100 + 1) == 20) {
-		if (mutCount == 20) {
-			newHorc = horcs[Math.floor(Math.random() * horcs.length)];
-		}
+	if (d = findSurroundingChar(EMPTY, item.row, item.col)) {
 
 		mutCount = ++mutCount % 4000;
+		let newHorc = mutCount ? item.horc : horcs[~~(Math.random() * horcs.length)];
+		newHorc = newHorc == 'P' ? 'S' : newHorc;
 
 		item.energy *= 0.375;
-		addCreature({row: item.row + d.r, col: item.col + d.c, entr: item.entr, 
-			lifetime: item.lifetime, horc: newHorc, metabolism: item.metabolism, 
-			germ: item.germ, energy: item.energy, age: 0});
+		addCreature({row: item.row + d.r, col: item.col + d.c,
+			horc: newHorc, energy: item.energy, age: 0});
 		return false;
 	}
 
@@ -94,33 +74,24 @@ function addCreature(newHorc) {
 }
 
 function killCreature(killHorc, clear = false) {
-	if(DECOMPOSERS && !clear){
-		killHorc.horc = 'X';
-		horcSheet[killHorc.row][killHorc.col] = 'X';
-	} else {
-		sheet[killHorc.row][killHorc.col] = null;
-		horcSheet[killHorc.row][killHorc.col] = EMPTY;
-	}
-
-	//Remove from list
+	sheet[killHorc.row][killHorc.col] = null;
+	horcSheet[killHorc.row][killHorc.col] = clear ? EMPTY : 'X';
 	horc[horc.indexOf(killHorc)] = horc[horc.length - 1];
 	horc.pop();
 }
 
 function eat(item) {
 	if (item.horc == 'D') {
-		var d = findSurroundingChar('X', item.row, item.col);
+		let d = findSurroundingChar('X', item.row, item.col);
 
 		if (d) { // if found
 			item.energy += 3;
-
-			sheet[item.row + d.r][item.col + d.c] = null;
 			horcSheet[item.row + d.r][item.col + d.c] = EMPTY;
 
 			return false;
 		}
 	}else if(item.horc == 'H' || item.horc == 'C'){
-		var vicrow = null;
+		let vicrow = null;
 
 		if(item.horc == 'H'){
 			vicrow = findSurroundingHorc('P', item.row, item.col); 
@@ -132,7 +103,7 @@ function eat(item) {
 			}
 		}
 
-		if (vicrow != null) { 
+		if (vicrow) { 
 			if (vicrow.energy < ENERGY_GAINED || item.horc == 'C') { 
 				item.energy += vicrow.energy * 0.75;
 				killCreature(vicrow, true);
@@ -152,22 +123,17 @@ function randomMovement(item) {
 	move(item, item.row + DIRECTIONS[pseudo].r, item.col + DIRECTIONS[pseudo].c);
 }
 
-function findSurroundingChar(string, row, column) {
-	return DIRECTIONS.find(d => get(row + d.r, column + d.c) == string);
+function findSurroundingChar(string, row, col) {
+	return DIRECTIONS.find(d => horcSheet[row + d.r][col + d.c] == string);
 }
 
 function findSurroundingHorc(string, row, column) {
-	var d = findSurroundingChar(string, row, column);
+	let d = findSurroundingChar(string, row, column);
 	return d ? sheet[row + d.r][column + d.c] : null;
 }
 
-function get(row, col){
-	return (row < 0 || row >= height || col < 0 || col >= width) ? 
-		'-' : horcSheet[row][col];
-}
-
 function move(item, row, col){
-	if (get(row, col) == EMPTY) {
+	if (horcSheet[row][col] == EMPTY) {
 		sheet[item.row][item.col] = null;
 		sheet[row][col] = item;
 
@@ -178,23 +144,18 @@ function move(item, row, col){
 	}
 }
 
-function refreshCanvas(){
-	var lastVal = null;
+function refreshCanvas(start){
+	let lastVal = null;
 	
-	for(var i = 0; i < height; i++){
-		var row = horcSheet[i];
-		var lastRow = lastSheet[i];
+	for(let i = 0; i < height; i++){
+		let row = horcSheet[i];
+		let lastRow = lastSheet[i];
 
-		for(var j = 0; j < width; j++){
-			var value = row[j];
+		for(let j = 0; j < width; j++){
+			let value = row[j];
 			
 			if(value != lastRow[j]){
 				if(value != lastVal){
-					if(!pallet[value]){
-						pallet[value] = '#' + Math.floor(Math.random()*16777215).toString(16);
-						console.log(`%c ${value} `, `background: ${pallet[value]};`);
-					}
-					
 					ctx.fillStyle = pallet[value];
 					lastVal = value;
 				}
@@ -204,5 +165,7 @@ function refreshCanvas(){
 			}	
 		}
 	}
+	
+	console.log(performance.now() - start);
 	requestAnimationFrame(refreshCanvas);
 }
