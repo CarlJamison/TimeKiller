@@ -3,7 +3,7 @@ const EMPTY = ' ';
 const horcs = ['D', 'P', 'H', 'C'];
 const pallet = [];
 [...horcs, 'S', 'X', EMPTY].forEach(h => {
-	pallet[h] = '#' + ~~(Math.random()*16777215).toString(16);
+	pallet[h] = '#' + Math.floor(Math.random()*16777215).toString(16);
 	console.log(`%c ${h} `, `background: ${pallet[h]};`);
 });	
 const DIRECTIONS = [{r: -1, c: 0}, {r: 0, c: 1}, {r: 1, c: 0}, {r: 0, c: -1}];
@@ -25,7 +25,7 @@ const sheet = Array.from(Array(height),  () => Array(width));
 const lastSheet = Array.from(Array(height),  () => Array(width));
 
 const horc = [];
-addCreature({row: ~~(height / 2), col: ~~(width / 2), entr: 20, horc: 'P', energy: 100, age: 0});
+addCreature({row: ~~(height / 2), col: ~~(width / 2), horc: 'P', energy: 100, age: 0});
 
 window.setInterval(runFrame, 1);
 refreshCanvas();
