@@ -6,9 +6,7 @@ const data = ctx.createImageData(width, height);
 
 const DIRECTIONS = [-width, 1, width, -1];
 const findSurroundingChar = (v, p) => DIRECTIONS.find(d => horcSheet[p + d] == v);
-const ENERGY_GAINED = 10;
-const [D, P, H, C, S, X, EMPTY, NO] = 
-	Array.from(Array(8), () => ~~(Math.random()*16777215) + 4278190080);
+const [D, P, H, C, S, X, EMPTY, NO] = Array(8).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
 const horcs = [D, P, H, C];
 const horc = [];
 
@@ -17,38 +15,36 @@ horcSheet.forEach((_, i) =>
 	horcSheet[i] = [0, height - 1].includes(~~(i / width)) || [0, width - 1].includes(i % width) ? NO : EMPTY);
 const sheet = Array(height * width);
 
-var mutCount = 0;
-var pseudo = 1;
+var mutCount = pseudo = 0;
 
-addCreature({pixel: ~~(height / 2) * width + ~~(width / 2), horc: P, energy: 100, age: 0});
+addCreature({pixel: ~~(height / 2) * width + ~~(width / 2), horc: P, energy: 500});
 window.setInterval(runFrame, 1);
-refreshCanvas();
 
 function runFrame(){
 	horc.forEach(item => {
-		if (item.horc != S && item.horc != P) item.energy -= 0.2; //Metabolism
-		if (item.horc == P && item.energy < 20) item.energy += 0.3; //Photosynthesis
-		if (item.horc == S && item.age++ > 10) horcSheet[item.pixel] = item.horc = P; //Germination
+		if (item.horc != P) item.energy--; //Metabolism
+		if (item.horc == P && item.energy < 100) item.energy += 1.5; //Photosynthesis
+		if (item.horc == S && item.energy < 30) horcSheet[item.pixel] = item.horc = P; //Germination
 		let z = item.energy <= 0 && killCreature(item); //DEATH
-		if (!z && item.energy >= 20 && item.horc != S) z = reproduce(item); //Reproduction
+		if (!z && item.energy >= 100 && item.horc != S) z = reproduce(item); //Reproduction
 		if (!z && item.horc != P && item.horc != S) z = eat(item); //Eating
 		if (!z && item.horc != P) z = randomMovement(item); //Movement
 	});	
+	
+	ctx.putImageData(data,0,0);
 }
 
 function reproduce(item) {
-	if (d = findSurroundingChar(EMPTY, item.pixel)) {
+	const d = findSurroundingChar(EMPTY, item.pixel)
+	if(!d) return false;
 
-		mutCount = ++mutCount % 4000;
-		let newHorc = mutCount ? item.horc : horcs[~~(Math.random() * horcs.length)];
-		newHorc = newHorc == P ? S : newHorc;
+	mutCount = ++mutCount % 4000;
+	let newHorc = mutCount ? item.horc : horcs[~~(Math.random() * horcs.length)];
+	newHorc = newHorc == P ? S : newHorc;
 
-		item.energy *= 0.375;
-		addCreature({pixel: item.pixel + d, horc: newHorc, energy: item.energy, age: 0});
-		return true;
-	}
-
-	return false;
+	item.energy *= 0.375;
+	addCreature({pixel: item.pixel + d, horc: newHorc, energy: item.energy});
+	return true;
 }
 
 function addCreature(newHorc) {
@@ -66,28 +62,22 @@ function killCreature(killHorc, clear = false) {
 }
 
 function eat(item) {
-
 	let h = item.horc;
-	if(d = findSurroundingChar(h == D ? X : h == H ? P : H, item.pixel)){
+	const d = findSurroundingChar(h == D ? X : h == H ? P : H, item.pixel);
+	if (!d) return false;
 
-		if(h == D){
-			item.energy += 3;
-			horcSheet[item.pixel + d] = EMPTY;
-		}else{
-			let vicrow = sheet[item.pixel + d];
-			
-			if (vicrow.energy < ENERGY_GAINED || h == C) { 
-				item.energy += vicrow.energy * 0.75;
-				killCreature(vicrow, true);
-			} else { 
-				vicrow.energy -= ENERGY_GAINED;
-				item.energy += ENERGY_GAINED * 0.75; 
-			}
-		}
-
-		return true;
+	if(item.horc == D){
+		item.energy += 15;
+		horcSheet[item.pixel + d] = EMPTY;
+	}else{
+		let vicrow = sheet[item.pixel + d];
+		let energy = item.horc == C ? vicrow.energy : Math.min(vicrow.energy, 50);
+		item.energy += energy * 0.75;
+		vicrow.energy -= energy;
+		if (vicrow.energy <= 0) killCreature(vicrow, true);
 	}
-	return false;
+
+	return true;
 }
 
 function randomMovement(item) {
@@ -102,9 +92,4 @@ function randomMovement(item) {
 		horcSheet[d] = item.horc;
 		item.pixel = d;
 	}
-}
-
-function refreshCanvas(){
-	ctx.putImageData(data,0,0);
-	requestAnimationFrame(refreshCanvas);
 }
