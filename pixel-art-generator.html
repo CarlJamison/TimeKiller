@@ -12,33 +12,41 @@ var buf = new Uint32Array(data.data.buffer);
 buf.forEach((_, i) => buf[i] = "0xFF" + ["f0f6f2", "fdbea4", "ae3d28", "3d0704", "839392"][~~(Math.random() * 5)])
 const DIRECTIONS = [-width, -width + 1, 1, width + 1, width, width - 1, -1, -width - 1];
 const PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
-const MAX_COLORS = 4;
-const CHUNK_SIZE = 4;
+const MAX_COLORS = 3;
+const CHUNK_SIZE = 5;
 
 const img = new Image();
 img.crossOrigin="anonymous";
-img.src = "car.jpg";
-
+img.src = "tree.jpg";
+var distanceScore = 0;
 img.onload = () => {
   	ctx.drawImage(img, 0, 0, width, height);
 	data = ctx.getImageData(0, 0, width, height);
 	buf = new Uint32Array(data.data.buffer);
 
+	//convertToGrayScale();
+
 	interpolateFarthest()
+	//getRandomSample()
 	console.log(buf.length);
 	while(PALLET.length < MAX_COLORS){
 		addSplit()
 	}
+	//PIXEL_LIST.forEach(pixel => generatePallet(buf[pixel]))
+	//PALLET = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
+	tunePallet()
 	PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
+
+	console.log("Score: " + (distanceScore / buf.length * 100))
 	console.log(PALLET.length)
-	chunk()
-	compress()
+	//chunk()
+	//compress()
 	ctx.putImageData(data,0,0);
 };
 
 
 var PALLET = []// = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-const MAX_DISTANCE = 196608;
+const MAX_DISTANCE = Math.sqrt(195075);
 const THRESHOLD = 2000;
 function getClosestColor(c1){
 	var returnColor = 0;
@@ -51,7 +59,152 @@ function getClosestColor(c1){
 		}
 	});
 
+	distanceScore += Math.sqrt(distance) / MAX_DISTANCE
 	return returnColor;
+}
+
+function convertToGrayScale(){
+	for(let i = 0; i < buf.length; i++){
+		let c = buf[i]
+		const r = (c >> 16) & 0xFF; 
+		const g = (c >> 8) & 0xFF;
+		const b = c & 0xFF;
+		let v = Math.floor((r + g + b) / 3)
+		buf[i] = ((255 << 24 | (v << 16) | (v << 8) | v) >>> 0);
+	}
+}
+
+function getRandomPallet(){
+	let bestPallet;
+	let score = 0;
+
+	for(let i = 0; i < 100; i++){
+		let testPallet = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
+		let testScore = getScore(testPallet);
+		if(testScore < score || !bestPallet){
+			bestPallet = testPallet;
+			score = testScore;
+		}
+		
+		console.log("Running sample " + testScore)
+	}
+
+	PALLET = bestPallet;
+}
+
+function getRandomSample(){
+	let bestPallet;
+	let score = 0;
+	
+	const SAMPLE_LENGTH = 10000;
+	const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
+	let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
+
+	for(let i = 0; i < 1000; i++){
+		console.log("Running sample " + i)
+		testPallet = []
+		for(j = 0; j < MAX_COLORS; j++){
+			testPallet.push(buf[Math.floor(Math.random() * buf.length)]);
+		}
+
+		let testScore = getSampleScore(testPallet, slice);
+		if(testScore < score || !bestPallet){
+			bestPallet = testPallet;
+			score = testScore;
+		}	
+	}
+	PALLET = bestPallet;
+}
+
+function getSampleScore(testPallet, slice){
+	return slice.reduce((score, c1) => {
+		const r1 = (c1 >> 16) & 0xFF; 
+		const g1 = (c1 >> 8) & 0xFF;
+		const b1 = c1 & 0xFF;
+		return score + testPallet.reduce((distance, c2) => {
+			const r2 = (c2 >> 16) & 0xFF; 
+			const g2 = (c2 >> 8) & 0xFF;
+			const b2 = c2 & 0xFF;
+			let testDistance = Math.pow(r1-r2, 2) + Math.pow(g1-g2, 2) +  Math.pow(b1-b2, 2) 
+		
+			return Math.min(testDistance, distance);
+		}, MAX_DISTANCE * MAX_DISTANCE);
+	}, 0);
+}
+
+function tunePallet(){
+
+	const SAMPLE_LENGTH = 1000;
+	const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
+	let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
+	let baseScore = getSampleScore(PALLET, slice);
+	console.log(baseScore)
+
+	let changed = true;
+	while(changed){
+		changed = false;
+		for(let i = 0; i < 3 * PALLET.length; i++){
+			let index = Math.floor(i / 3);
+			let slot = i % 3;
+			let baseColor = PALLET[index];
+			let val = baseColor >> (8 * slot) & 0xFF
+			let direction = 0;
+			let newScore = baseScore;
+			let newColor = baseColor;
+			
+			let raisedColor = baseColor + Math.pow(2, 8 * slot);
+			PALLET[index] = raisedColor;
+			let raisedScore = getSampleScore(PALLET, slice);
+			if(raisedScore < baseScore){
+				direction = 1;
+				newColor = raisedColor;
+				newScore = raisedScore;
+			}
+
+			loweredColor = baseColor - Math.pow(2, 8 * slot);
+			PALLET[index] = loweredColor;
+			let loweredScore = getSampleScore(PALLET, slice);
+			if(loweredScore < Math.min(baseScore, newScore)){
+				direction = -1;
+				newColor = loweredColor;
+				newScore = loweredScore;
+			}
+
+			if(direction != 0){
+				changed = true;
+				while(newScore < baseScore){
+					baseScore = newScore;
+					baseColor = newColor;
+					newColor = baseColor + (Math.pow(2, 8 * slot) * direction) 
+					PALLET[index] = baseColor;
+					newScore = getSampleScore(PALLET, slice);
+				}
+			}
+
+			PALLET[index] = baseColor;
+		}
+
+		let newScore = getSampleScore(PALLET, slice);
+		console.log(newScore)
+	}
+	//console.log(newScore - baseScore);
+
+}
+
+function getScore(testPallet){
+	return buf.reduce((score, c1) => {
+		const r1 = (c1 >> 16) & 0xFF; 
+		const g1 = (c1 >> 8) & 0xFF;
+		const b1 = c1 & 0xFF;
+		return score + Math.sqrt(testPallet.reduce((distance, c2) => {
+			const r2 = (c2 >> 16) & 0xFF; 
+			const g2 = (c2 >> 8) & 0xFF;
+			const b2 = c2 & 0xFF;
+			let testDistance = Math.pow(r1-r2, 2) + Math.pow(g1-g2, 2) +  Math.pow(b1-b2, 2) 
+		
+			return Math.min(testDistance, distance);
+		}, MAX_DISTANCE * MAX_DISTANCE));
+	}, 0);
 }
 
 function interpolateFarthest(){
@@ -66,7 +219,6 @@ function interpolateFarthest(){
 	const gDistance = g2 - g1;
 	const bDistance = b2 - b1;
 	for(let i = 0; i < MAX_COLORS; i++){
-		//let c = i / (MAX_COLORS - 1)
 		let c = (i + .5) / MAX_COLORS
 		let r = Math.floor(r1 + (rDistance * c));
 		let g = Math.floor(g1 + (gDistance * c));
@@ -77,7 +229,7 @@ function interpolateFarthest(){
 }
 
 function generatePallet(c1){
-	var distance = MAX_DISTANCE;
+	var distance = MAX_DISTANCE* MAX_DISTANCE;
 	PALLET.forEach(c2 => {
 		distance = Math.min(getDistance(c1, c2), distance);
 	});
@@ -141,7 +293,7 @@ function addSplit(){
 			}
 		});
 
-		PALLET = PALLET.filter(p => p != color)
+		PALLET = PALLET.filter(p => p != color && colorMap[p].length)
 		PALLET = PALLET.concat(farthestColors(colorMap[color]));
 	}else{
 		PALLET = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
