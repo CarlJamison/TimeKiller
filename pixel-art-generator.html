@@ -1,48 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-<body style="overflow: hidden; margin:0">
-<canvas id="myCanvas"\>
+	<style>
+:root{--bg:#0f1724;--card:#0b1220;--accent:#1ea7fd;--muted:#98a0b3;}
+*{box-sizing:border-box}
+body{font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#071023 0%,#0b1220 100%); color:#e6eef8; padding:32px;}
+.container{max-width:600px;margin:0 auto;text-align:center}
+h1{font-size:22px;margin-bottom:10px}
+p.lead{color:var(--muted);margin-bottom:20px}
+.btn{background:linear-gradient(90deg,var(--accent),#5bd0ff);border:none;padding:12px 20px;border-radius:10px;color:#042033;font-weight:600;cursor:pointer;font-size:15px}
+.btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--muted);margin-left:10px}
+.preview{margin-top:20px;display:flex;justify-content:center}
+.thumb{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px;width:240px;text-align:center}
+.thumb img{width:100%;height:auto;border-radius:10px;margin-bottom:10px}
+.meta{font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
+.note{margin-top:12px;font-size:13px;color:var(--muted)}
+input[type=file]{display:none}
+</style>
+<body style="margin:0">
+	<div class="container">
+<h1>Choose an Image</h1>
+<p class="lead">Select one image file (JPEG, PNG, or GIF, up to 5 MB).</p>
+
+
+<div class="actions">
+<label class="btn" for="file-input">Select File</label>
+<button type="button" class="btn secondary" id="clearBtn">Clear</button>
+</div>
+
+
+<input id="file-input" type="file" accept="image/*" aria-hidden="false">
+<div id="messages" class="note" aria-live="polite"></div>
+
+<div id="preview" class="preview" aria-live="polite"></div>
+</div>
+<canvas style="width: 100%; border-radius: 10px;"id="myCanvas"\>
 <script>
 const canvas = document.getElementById("myCanvas");
 const ctx = canvas.getContext("2d");
-const width = canvas.width = window.innerWidth;
-const height = canvas.height = window.innerHeight;
-var data = ctx.createImageData(width, height);
-var buf = new Uint32Array(data.data.buffer);
-buf.forEach((_, i) => buf[i] = "0xFF" + ["f0f6f2", "fdbea4", "ae3d28", "3d0704", "839392"][~~(Math.random() * 5)])
-const DIRECTIONS = [-width, -width + 1, 1, width + 1, width, width - 1, -1, -width - 1];
-const PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
+var { width, height } = canvas.getBoundingClientRect();
+var data;
+var buf;
 const MAX_COLORS = 3;
-const CHUNK_SIZE = 5;
+var CHUNK_SIZE = 2;
+var distanceScore;
 
-const img = new Image();
-img.crossOrigin="anonymous";
-img.src = "tree.jpg";
-var distanceScore = 0;
-img.onload = () => {
-  	ctx.drawImage(img, 0, 0, width, height);
-	data = ctx.getImageData(0, 0, width, height);
-	buf = new Uint32Array(data.data.buffer);
+function loadImage(URL){
+	const img = new Image();
+	img.crossOrigin="anonymous";
+	img.src = URL;
+	img.onload = () => {
 
-	//convertToGrayScale();
+		distanceScore = 0;
+		height = canvas.height = Math.floor(img.height * (width / img.width));
+		width = canvas.width = Math.floor(width)
+		ctx.drawImage(img, 0, 0, width, height);
+		data = ctx.getImageData(0, 0, width, height);
+		buf = new Uint32Array(data.data.buffer);
+		PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
 
-	interpolateFarthest()
-	//getRandomSample()
-	console.log(buf.length);
-	while(PALLET.length < MAX_COLORS){
-		addSplit()
-	}
-	//PIXEL_LIST.forEach(pixel => generatePallet(buf[pixel]))
-	//PALLET = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-	tunePallet()
-	PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
+		//convertToGrayScale();
 
-	console.log("Score: " + (distanceScore / buf.length * 100))
-	console.log(PALLET.length)
-	//chunk()
-	//compress()
-	ctx.putImageData(data,0,0);
-};
+		//interpolateFarthest()
+		//getRandomSample()
+		console.log(buf.length);
+		while(PALLET.length < MAX_COLORS){
+			addSplit()
+		}
+		//PIXEL_LIST.forEach(pixel => generatePallet(buf[pixel]))
+		//PALLET = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
+		tunePallet()
+		PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
+
+		console.log("Score: " + (distanceScore / buf.length * 100))
+		console.log(PALLET.length)
+		//chunk()
+		ctx.putImageData(data,0,0);
+	};
+}
 
 
 var PALLET = []// = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
@@ -293,7 +327,8 @@ function addSplit(){
 			}
 		});
 
-		PALLET = PALLET.filter(p => p != color && colorMap[p].length)
+		//PALLET = PALLET.filter(p => p != color && colorMap[p].length)
+		PALLET = PALLET.filter(p => p != color)
 		PALLET = PALLET.concat(farthestColors(colorMap[color]));
 	}else{
 		PALLET = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
@@ -317,7 +352,7 @@ function chunk(){
 
 	for(let i = 0; i < chunkWidth; i++){
 		for(let j = 0; j < chunkHeight; j++){
-			setChunkColor(i, j);
+			setChunkColorV2(i, j);
 		}
 	}
 
@@ -356,6 +391,38 @@ function setChunkColor(w, h){
 	}
 }
 
+function setChunkColorV2(w, h){
+	let tr = 0;
+	let tg = 0;
+	let tb = 0;
+	let startW = w * CHUNK_SIZE;
+	let startH = h * CHUNK_SIZE;
+	for(let i = startW; i < startW + CHUNK_SIZE; i++){
+		for(let j = startH; j < startH + CHUNK_SIZE; j++){
+			if(i < width && j < height){
+				let c = buf[width * j + i];
+				tr+= (c >> 16) & 0xFF; 
+				tg+= (c >> 8) & 0xFF;
+				tb+= c & 0xFF;
+			}
+		}
+	}
+
+
+	let r = Math.floor(tr / Math.pow(CHUNK_SIZE, 2));
+	let g = Math.floor(tg / Math.pow(CHUNK_SIZE, 2));
+	let b = Math.floor(tb / Math.pow(CHUNK_SIZE, 2));
+	let color = getClosestColor((255 << 24 | (r << 16) | (g << 8) | b) >>> 0);
+	
+	for(let i = startW; i < startW + CHUNK_SIZE; i++){
+		for(let j = startH; j < startH + CHUNK_SIZE; j++){
+			if(i < width && j < height){
+				buf[width * j + i] = color;
+			}
+		}
+	}
+}
+
 function compress(){
 	let counter = 0;
 	let max = 32;
@@ -380,6 +447,70 @@ function compress(){
 	console.log(chunkWidth*chunkHeight)
 	console.log(out.length)
 }
+
+(function(){
+const fileInput = document.getElementById('file-input');
+const preview = document.getElementById('preview');
+const messages = document.getElementById('messages');
+const clearBtn = document.getElementById('clearBtn');
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['image/jpeg','image/png','image/gif','image/webp','image/svg+xml'];
+
+
+let file = null;
+
+
+function showMessage(text, isError){
+messages.textContent = text;
+messages.style.color = isError ? '#ff9aa2' : '';
+}
+
+
+function updatePreview(){
+preview.innerHTML = '';
+if(!file) return;
+const url = URL.createObjectURL(file);
+loadImage(url)
+const div = document.createElement('div');
+div.className = 'thumb';
+div.innerHTML = `\n <img src="${url}" alt="Preview ${file.name}">\n <div class="meta"><span title="${file.name}">${truncate(file.name, 22)}</span><span>${formatBytes(file.size)}</span></div>\n `;
+const img = div.querySelector('img');
+img.addEventListener('load', ()=> URL.revokeObjectURL(url));
+preview.appendChild(div);
+}
+
+
+function truncate(str, n){ return (str.length>n)? str.slice(0,n-1)+'…' : str; }
+function formatBytes(bytes){
+if(bytes < 1024) return bytes + ' B';
+if(bytes < 1024*1024) return (bytes/1024).toFixed(1)+' KB';
+return (bytes/(1024*1024)).toFixed(2)+' MB';
+}
+
+
+function validateAndAdd(f){
+if(!f) return;
+if(!ALLOWED_TYPES.includes(f.type)) { showMessage('Unsupported file type.', true); return; }
+if(f.size > MAX_SIZE) { showMessage('File too large (max 5 MB).', true); return; }
+file = f;
+showMessage('File selected.');
+updatePreview();
+}
+
+
+function clearAll(){ file = null; updatePreview(); showMessage('Selection cleared.'); fileInput.value = '' }
+
+
+fileInput.addEventListener('change', e=> validateAndAdd(e.target.files[0]));
+clearBtn.addEventListener('click', clearAll);
+
+
+window.getSelectedFile = ()=> file;
+window.clearSelectedFile = clearAll;
+
+
+showMessage('No file selected.');
+})();
 </script>
 </body>
 </html>
