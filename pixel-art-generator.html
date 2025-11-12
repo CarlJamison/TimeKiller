@@ -19,7 +19,7 @@ input[type=file]{display:none}
 <body style="margin:0">
 	<div class="container">
 <h1>Choose an Image</h1>
-<p class="lead">Select one image file (JPEG, PNG, or GIF, up to 5 MB).</p>
+<p class="lead">Select one image file (JPEG, PNG, or GIF, up to 25 MB).</p>
 
 
 <div class="actions">
@@ -40,9 +40,8 @@ const ctx = canvas.getContext("2d");
 var { width, height } = canvas.getBoundingClientRect();
 var data;
 var buf;
-const MAX_COLORS = 3;
+const MAX_COLORS = 4;
 var CHUNK_SIZE = 2;
-var distanceScore;
 
 function loadImage(URL){
 	const img = new Image();
@@ -62,7 +61,6 @@ function loadImage(URL){
 
 		//interpolateFarthest()
 		//getRandomSample()
-		console.log(buf.length);
 		while(PALLET.length < MAX_COLORS){
 			addSplit()
 		}
@@ -81,7 +79,6 @@ function loadImage(URL){
 
 var PALLET = []// = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
 const MAX_DISTANCE = Math.sqrt(195075);
-const THRESHOLD = 2000;
 function getClosestColor(c1){
 	var returnColor = 0;
 	var distance = -1;
@@ -93,7 +90,6 @@ function getClosestColor(c1){
 		}
 	});
 
-	distanceScore += Math.sqrt(distance) / MAX_DISTANCE
 	return returnColor;
 }
 
@@ -221,7 +217,6 @@ function tunePallet(){
 		let newScore = getSampleScore(PALLET, slice);
 		console.log(newScore)
 	}
-	//console.log(newScore - baseScore);
 
 }
 
@@ -260,17 +255,6 @@ function interpolateFarthest(){
 		PALLET.push((255 << 24 | (r << 16) | (g << 8) | b) >>> 0);
 	}
 	
-}
-
-function generatePallet(c1){
-	var distance = MAX_DISTANCE* MAX_DISTANCE;
-	PALLET.forEach(c2 => {
-		distance = Math.min(getDistance(c1, c2), distance);
-	});
-
-	if(!PALLET.length || (PALLET.length < MAX_COLORS && distance > THRESHOLD)){
-		PALLET.push(c1);
-	}
 }
 
 function farthestColors(colors){
@@ -320,14 +304,12 @@ function addSplit(){
 		var count = -1;
 		var color
 		PALLET.forEach(p => {
-			//colorMap[p] = [...new Set(colorMap[p])];
 			if(colorMap[p].length > count){
 				count = colorMap[p].length;
 				color = p;
 			}
 		});
 
-		//PALLET = PALLET.filter(p => p != color && colorMap[p].length)
 		PALLET = PALLET.filter(p => p != color)
 		PALLET = PALLET.concat(farthestColors(colorMap[color]));
 	}else{
@@ -453,16 +435,15 @@ const fileInput = document.getElementById('file-input');
 const preview = document.getElementById('preview');
 const messages = document.getElementById('messages');
 const clearBtn = document.getElementById('clearBtn');
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 25 * 1024 * 1024; // 25MB
 const ALLOWED_TYPES = ['image/jpeg','image/png','image/gif','image/webp','image/svg+xml'];
 
 
 let file = null;
 
-
 function showMessage(text, isError){
-messages.textContent = text;
-messages.style.color = isError ? '#ff9aa2' : '';
+	messages.textContent = text;
+	messages.style.color = isError ? '#ff9aa2' : '';
 }
 
 
