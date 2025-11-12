@@ -1,497 +1,745 @@
 <!DOCTYPE html>
 <html lang="en">
-	<style>
-:root{--bg:#0f1724;--card:#0b1220;--accent:#1ea7fd;--muted:#98a0b3;}
-*{box-sizing:border-box}
-body{font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#071023 0%,#0b1220 100%); color:#e6eef8; padding:32px;}
-.container{max-width:600px;margin:0 auto;text-align:center}
-h1{font-size:22px;margin-bottom:10px}
-p.lead{color:var(--muted);margin-bottom:20px}
-.btn{background:linear-gradient(90deg,var(--accent),#5bd0ff);border:none;padding:12px 20px;border-radius:10px;color:#042033;font-weight:600;cursor:pointer;font-size:15px}
-.btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--muted);margin-left:10px}
-.preview{margin-top:20px;display:flex;justify-content:center}
-.thumb{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px;width:240px;text-align:center}
-.thumb img{width:100%;height:auto;border-radius:10px;margin-bottom:10px}
-.meta{font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
-.note{margin-top:12px;font-size:13px;color:var(--muted)}
-input[type=file]{display:none}
+<style>
+	:root {
+		--bg: #0f1724;
+		--card: #0b1220;
+		--accent: #1ea7fd;
+		--muted: #98a0b3;
+	}
+
+	* {
+		box-sizing: border-box
+	}
+
+	body {
+		font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+		background: linear-gradient(180deg, #071023 0%, #0b1220 100%);
+		color: #e6eef8;
+		padding: 32px;
+	}
+
+	.container {
+		max-width: 600px;
+		margin: 0 auto;
+		text-align: center
+	}
+
+	h1 {
+		font-size: 22px;
+		margin-bottom: 10px
+	}
+
+	p.lead {
+		color: var(--muted);
+		margin-bottom: 20px
+	}
+
+	.btn {
+		background: linear-gradient(90deg, var(--accent), #5bd0ff);
+		border: none;
+		padding: 12px 20px;
+		border-radius: 10px;
+		color: #042033;
+		font-weight: 600;
+		cursor: pointer;
+		font-size: 15px
+	}
+
+	.btn.secondary {
+		background: transparent;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		color: var(--muted);
+		margin-left: 10px
+	}
+
+	.preview {
+		margin-top: 20px;
+		display: flex;
+		justify-content: center
+	}
+
+	.thumb {
+		background: rgba(255, 255, 255, 0.03);
+		border-radius: 12px;
+		padding: 12px;
+		width: 240px;
+		text-align: center
+	}
+
+	.thumb img {
+		width: 100%;
+		height: auto;
+		border-radius: 10px;
+		margin-bottom: 10px
+	}
+
+	.meta {
+		font-size: 13px;
+		color: var(--muted);
+		display: flex;
+		justify-content: space-between
+	}
+
+	.note {
+		margin-top: 12px;
+		font-size: 13px;
+		color: var(--muted)
+	}
+
+	input[type=file] {
+		display: none
+	}
+
+	:root {
+		--bg: #0f1724;
+		--card: #0b1220;
+		--accent: #1ea7fd;
+		--muted: #98a0b3
+	}
+
+	* {
+		box-sizing: border-box
+	}
+
+	body {
+		font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+		background: #071023;
+		color: #eaf4ff;
+		padding: 28px
+	}
+
+	.card {
+		max-width: 720px;
+		margin: 0 auto;
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+		padding: 20px;
+		border-radius: 12px
+	}
+
+	h1 {
+		font-size: 18px;
+		margin: 0 0 8px
+	}
+
+	p.lead {
+		color: var(--muted);
+		margin: 0 0 16px
+	}
+
+	.row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin: 12px 0
+	}
+
+	label {
+		min-width: 160px
+	}
+
+	.control {
+		flex: 1
+	}
+
+	input[type=range] {
+		width: 100%
+	}
+
+	select,
+	input[type=checkbox] {
+		padding: 8px;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.06);
+		background: transparent;
+		color: inherit
+	}
+
+	.value {
+		min-width: 48px;
+		text-align: right;
+		color: var(--muted)
+	}
+
+	.actions {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+		margin-top: 16px
+	}
+
+	button {
+		background: linear-gradient(90deg, var(--accent), #5bd0ff);
+		border: none;
+		padding: 8px 12px;
+		border-radius: 8px;
+		color: #042033;
+		font-weight: 600;
+		cursor: pointer
+	}
+
+	pre {
+		background: rgba(255, 255, 255, 0.02);
+		padding: 12px;
+		border-radius: 8px;
+		color: var(--muted);
+		overflow: auto
+	}
+
+	@media (max-width:640px) {
+		.row {
+			flex-direction: column;
+			align-items: stretch
+		}
+
+		label {
+			min-width: 0
+		}
+	}
 </style>
+
 <body style="margin:0">
 	<div class="container">
-<h1>Choose an Image</h1>
-<p class="lead">Select one image file (JPEG, PNG, or GIF, up to 25 MB).</p>
+		<h1>Choose an Image</h1>
+		<p class="lead">Select one image file (JPEG, PNG, or GIF, up to 25 MB).</p>
 
 
-<div class="actions">
-<label class="btn" for="file-input">Select File</label>
-<button type="button" class="btn secondary" id="clearBtn">Clear</button>
-</div>
+		<div class="actions">
+			<label class="btn" for="file-input">Select File</label>
+			<button type="button" class="btn secondary" id="clearBtn">Clear</button>
+		</div>
 
 
-<input id="file-input" type="file" accept="image/*" aria-hidden="false">
-<div id="messages" class="note" aria-live="polite"></div>
+		<input id="file-input" type="file" accept="image/*" aria-hidden="false">
+		<div id="messages" class="note" aria-live="polite"></div>
 
-<div id="preview" class="preview" aria-live="polite"></div>
-</div>
-<canvas style="width: 100%; border-radius: 10px;"id="myCanvas"\>
-<script>
-const canvas = document.getElementById("myCanvas");
-const ctx = canvas.getContext("2d");
-var { width, height } = canvas.getBoundingClientRect();
-var data;
-var buf;
-const MAX_COLORS = 4;
-var CHUNK_SIZE = 2;
-
-function loadImage(URL){
-	const img = new Image();
-	img.crossOrigin="anonymous";
-	img.src = URL;
-	img.onload = () => {
-
-		distanceScore = 0;
-		height = canvas.height = Math.floor(img.height * (width / img.width));
-		width = canvas.width = Math.floor(width)
-		ctx.drawImage(img, 0, 0, width, height);
-		data = ctx.getImageData(0, 0, width, height);
-		buf = new Uint32Array(data.data.buffer);
-		PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
-
-		//convertToGrayScale();
-
-		//interpolateFarthest()
-		//getRandomSample()
-		while(PALLET.length < MAX_COLORS){
-			addSplit()
-		}
-		//PIXEL_LIST.forEach(pixel => generatePallet(buf[pixel]))
-		//PALLET = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-		tunePallet()
-		PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
-
-		console.log("Score: " + (distanceScore / buf.length * 100))
-		console.log(PALLET.length)
-		//chunk()
-		ctx.putImageData(data,0,0);
-	};
-}
+		<div id="preview" class="preview" aria-live="polite"></div>
+	</div>
+	<div class="card" role="region" aria-labelledby="title">
+		<h1 id="title">Color Settings</h1>
+		<p class="lead">Adjust the parameters below. Values are constrained where noted.</p>
 
 
-var PALLET = []// = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-const MAX_DISTANCE = Math.sqrt(195075);
-function getClosestColor(c1){
-	var returnColor = 0;
-	var distance = -1;
-	PALLET.forEach(c2 => {
-		var cDistance = getDistance(c1, c2);
-		if(cDistance < distance || distance < 0){
-			distance = cDistance;
-			returnColor = c2;
-		}
-	});
+		<div class="row">
+			<label for="numColors">Number of Colors</label>
+			<div class="control">
+				<input id="numColors" type="range" min="2" max="16" step="1" value="4" aria-valuemin="2"
+					aria-valuemax="16">
+			</div>
+			<div class="value" id="numColorsVal">8</div>
+		</div>
 
-	return returnColor;
-}
 
-function convertToGrayScale(){
-	for(let i = 0; i < buf.length; i++){
-		let c = buf[i]
-		const r = (c >> 16) & 0xFF; 
-		const g = (c >> 8) & 0xFF;
-		const b = c & 0xFF;
-		let v = Math.floor((r + g + b) / 3)
-		buf[i] = ((255 << 24 | (v << 16) | (v << 8) | v) >>> 0);
-	}
-}
+		<div class="row">
+			<label for="mode">Mode</label>
+			<div class="control">
+				<select id="mode" aria-label="Selection mode">
+					<option value="color-split">Color split</option>
+					<option value="random">Random</option>
+				</select>
+			</div>
+			<div class="value" id="modeVal">random</div>
+		</div>
 
-function getRandomPallet(){
-	let bestPallet;
-	let score = 0;
 
-	for(let i = 0; i < 100; i++){
-		let testPallet = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-		let testScore = getScore(testPallet);
-		if(testScore < score || !bestPallet){
-			bestPallet = testPallet;
-			score = testScore;
-		}
+		<div class="row">
+			<label for="gdTuning">Gradient descent tuning</label>
+			<div class="control">
+				<input id="gdTuning" type="checkbox" checked="true" aria-checked="true">
+			</div>
+			<div class="value" id="gdVal">on</div>
+		</div>
+
+
+		<div class="row">
+			<label for="chunkSize">Chunk size</label>
+			<div class="control">
+				<input id="chunkSize" type="range" min="1" max="16" step="1" value="1" aria-valuemin="2"
+					aria-valuemax="16">
+			</div>
+			<div class="value" id="chunkVal">4</div>
+		</div>
+
+
+		<div class="actions">
+			<button id="resetBtn">Reset</button>
+		</div>
+
+	</div>
+	<canvas style="width: 100%; border-radius: 10px;" id="myCanvas" \>
+		<script>
+			const canvas = document.getElementById("myCanvas");
+			const ctx = canvas.getContext("2d");
+			var { width, height } = canvas.getBoundingClientRect();
+			var data;
+			var buf;
+			var MAX_COLORS = 4;
+			var CHUNK_SIZE = 2;
+			var GRADIENT_DESCENT = true;
+			var MODE = "color-split"
+
+			function loadImage(URL) {
+				const img = new Image();
+				img.crossOrigin = "anonymous";
+				img.src = URL;
+				img.onload = () => {
+					PALLET = [];
+					height = canvas.height = Math.floor(img.height * (width / img.width));
+					width = canvas.width = Math.floor(width)
+					ctx.drawImage(img, 0, 0, width, height);
+					data = ctx.getImageData(0, 0, width, height);
+					buf = new Uint32Array(data.data.buffer);
+					PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
+
+					//convertToGrayScale();
+
+					//interpolateFarthest()
+					if(mode == "random"){
+						getRandomSample()
+					}
+					
+					while (PALLET.length < MAX_COLORS) {
+						addSplit()
+					}
+					//PALLET = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
+
+					if(GRADIENT_DESCENT){
+						tunePallet()
+					}
+
+					PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
+					
+					if(CHUNK_SIZE > 1){
+						chunk()
+					}
 		
-		console.log("Running sample " + testScore)
-	}
-
-	PALLET = bestPallet;
-}
-
-function getRandomSample(){
-	let bestPallet;
-	let score = 0;
-	
-	const SAMPLE_LENGTH = 10000;
-	const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
-	let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
-
-	for(let i = 0; i < 1000; i++){
-		console.log("Running sample " + i)
-		testPallet = []
-		for(j = 0; j < MAX_COLORS; j++){
-			testPallet.push(buf[Math.floor(Math.random() * buf.length)]);
-		}
-
-		let testScore = getSampleScore(testPallet, slice);
-		if(testScore < score || !bestPallet){
-			bestPallet = testPallet;
-			score = testScore;
-		}	
-	}
-	PALLET = bestPallet;
-}
-
-function getSampleScore(testPallet, slice){
-	return slice.reduce((score, c1) => {
-		const r1 = (c1 >> 16) & 0xFF; 
-		const g1 = (c1 >> 8) & 0xFF;
-		const b1 = c1 & 0xFF;
-		return score + testPallet.reduce((distance, c2) => {
-			const r2 = (c2 >> 16) & 0xFF; 
-			const g2 = (c2 >> 8) & 0xFF;
-			const b2 = c2 & 0xFF;
-			let testDistance = Math.pow(r1-r2, 2) + Math.pow(g1-g2, 2) +  Math.pow(b1-b2, 2) 
-		
-			return Math.min(testDistance, distance);
-		}, MAX_DISTANCE * MAX_DISTANCE);
-	}, 0);
-}
-
-function tunePallet(){
-
-	const SAMPLE_LENGTH = 1000;
-	const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
-	let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
-	let baseScore = getSampleScore(PALLET, slice);
-	console.log(baseScore)
-
-	let changed = true;
-	while(changed){
-		changed = false;
-		for(let i = 0; i < 3 * PALLET.length; i++){
-			let index = Math.floor(i / 3);
-			let slot = i % 3;
-			let baseColor = PALLET[index];
-			let val = baseColor >> (8 * slot) & 0xFF
-			let direction = 0;
-			let newScore = baseScore;
-			let newColor = baseColor;
-			
-			let raisedColor = baseColor + Math.pow(2, 8 * slot);
-			PALLET[index] = raisedColor;
-			let raisedScore = getSampleScore(PALLET, slice);
-			if(raisedScore < baseScore){
-				direction = 1;
-				newColor = raisedColor;
-				newScore = raisedScore;
+					ctx.putImageData(data, 0, 0);
+				};
 			}
 
-			loweredColor = baseColor - Math.pow(2, 8 * slot);
-			PALLET[index] = loweredColor;
-			let loweredScore = getSampleScore(PALLET, slice);
-			if(loweredScore < Math.min(baseScore, newScore)){
-				direction = -1;
-				newColor = loweredColor;
-				newScore = loweredScore;
+
+			var PALLET = []// = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
+			const MAX_DISTANCE = Math.sqrt(195075);
+			function getClosestColor(c1) {
+				var returnColor = 0;
+				var distance = -1;
+				PALLET.forEach(c2 => {
+					var cDistance = getDistance(c1, c2);
+					if (cDistance < distance || distance < 0) {
+						distance = cDistance;
+						returnColor = c2;
+					}
+				});
+
+				return returnColor;
 			}
 
-			if(direction != 0){
-				changed = true;
-				while(newScore < baseScore){
-					baseScore = newScore;
-					baseColor = newColor;
-					newColor = baseColor + (Math.pow(2, 8 * slot) * direction) 
-					PALLET[index] = baseColor;
-					newScore = getSampleScore(PALLET, slice);
+			function convertToGrayScale() {
+				for (let i = 0; i < buf.length; i++) {
+					let c = buf[i]
+					const r = (c >> 16) & 0xFF;
+					const g = (c >> 8) & 0xFF;
+					const b = c & 0xFF;
+					let v = Math.floor((r + g + b) / 3)
+					buf[i] = ((255 << 24 | (v << 16) | (v << 8) | v) >>> 0);
 				}
 			}
 
-			PALLET[index] = baseColor;
-		}
+			function getRandomPallet() {
+				let bestPallet;
+				let score = 0;
 
-		let newScore = getSampleScore(PALLET, slice);
-		console.log(newScore)
-	}
+				for (let i = 0; i < 100; i++) {
+					let testPallet = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
+					let testScore = getScore(testPallet);
+					if (testScore < score || !bestPallet) {
+						bestPallet = testPallet;
+						score = testScore;
+					}
 
-}
-
-function getScore(testPallet){
-	return buf.reduce((score, c1) => {
-		const r1 = (c1 >> 16) & 0xFF; 
-		const g1 = (c1 >> 8) & 0xFF;
-		const b1 = c1 & 0xFF;
-		return score + Math.sqrt(testPallet.reduce((distance, c2) => {
-			const r2 = (c2 >> 16) & 0xFF; 
-			const g2 = (c2 >> 8) & 0xFF;
-			const b2 = c2 & 0xFF;
-			let testDistance = Math.pow(r1-r2, 2) + Math.pow(g1-g2, 2) +  Math.pow(b1-b2, 2) 
-		
-			return Math.min(testDistance, distance);
-		}, MAX_DISTANCE * MAX_DISTANCE));
-	}, 0);
-}
-
-function interpolateFarthest(){
-	[c1, c2] = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
-	const r1 = (c1 >> 16) & 0xFF; 
-  	const g1 = (c1 >> 8) & 0xFF;
-  	const b1 = c1 & 0xFF;
-	const r2 = (c2 >> 16) & 0xFF; 
-  	const g2 = (c2 >> 8) & 0xFF;
-  	const b2 = c2 & 0xFF;
-	const rDistance = r2 - r1;
-	const gDistance = g2 - g1;
-	const bDistance = b2 - b1;
-	for(let i = 0; i < MAX_COLORS; i++){
-		let c = (i + .5) / MAX_COLORS
-		let r = Math.floor(r1 + (rDistance * c));
-		let g = Math.floor(g1 + (gDistance * c));
-		let b = Math.floor(b1 + (bDistance * c));
-		PALLET.push((255 << 24 | (r << 16) | (g << 8) | b) >>> 0);
-	}
-	
-}
-
-function farthestColors(colors){
-	colors = [...new Set(colors)]
-	console.log(colors.length);
-
-	var c1, c2
-	var distance = 0;
-
-	for(var i = 0; i < colors.length; i++){
-		var iColor = colors[i];
-		for(var j = i + 1; j < colors.length; j++){
-			var jColor = colors[j];
-			let testDistance = getDistance(iColor, jColor);
-			if(testDistance > distance){
-				distance = testDistance;
-				c1 = iColor;
-				c2 = jColor;
-			}
-		}
-	}
-	
-	return [c1, c2]
-}
-
-function addSplit(){
-	if(PALLET.length){
-		var colorMap = {}
-		var randomStart = Math.floor(Math.random() * PIXEL_LIST.length)
-
-		PALLET.forEach(p => colorMap[p] = [])
-		for(var i = 0; i < 1000; i++){
-			var c = buf[(i + randomStart) % PIXEL_LIST.length];
-			var closest = 0;
-			var distance = -1;
-			PALLET.forEach(c2 => {
-				var cDistance = getDistance(c, c2);
-				if(cDistance < distance || distance < 0){
-					distance = cDistance;
-					closest = c2;
+					console.log("Running sample " + testScore)
 				}
-			});
 
-			colorMap[closest].push(c);
-		}
-
-		var count = -1;
-		var color
-		PALLET.forEach(p => {
-			if(colorMap[p].length > count){
-				count = colorMap[p].length;
-				color = p;
+				PALLET = bestPallet;
 			}
-		});
 
-		PALLET = PALLET.filter(p => p != color)
-		PALLET = PALLET.concat(farthestColors(colorMap[color]));
-	}else{
-		PALLET = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
-	}
-}
+			function getRandomSample() {
+				let bestPallet;
+				let score = 0;
 
-function getDistance(c1, c2){
-	const r1 = (c1 >> 16) & 0xFF; 
-  	const g1 = (c1 >> 8) & 0xFF;
-  	const b1 = c1 & 0xFF;
-	const r2 = (c2 >> 16) & 0xFF; 
-  	const g2 = (c2 >> 8) & 0xFF;
-  	const b2 = c2 & 0xFF;
+				const SAMPLE_LENGTH = 10000;
+				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
+				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
 
-	return Math.pow(r1-r2, 2) + Math.pow(g1-g2, 2) +  Math.pow(b1-b2, 2)
-}
+				for (let i = 0; i < 1000; i++) {
+					console.log("Running sample " + i)
+					testPallet = []
+					for (j = 0; j < MAX_COLORS; j++) {
+						testPallet.push(buf[Math.floor(Math.random() * buf.length)]);
+					}
 
-function chunk(){
-	let chunkWidth = Math.ceil(width / CHUNK_SIZE);
-	let chunkHeight = Math.ceil(height / CHUNK_SIZE);
-
-	for(let i = 0; i < chunkWidth; i++){
-		for(let j = 0; j < chunkHeight; j++){
-			setChunkColorV2(i, j);
-		}
-	}
-
-	console.log("OUTSIZE: " + chunkWidth * chunkHeight * 4 / 8)
-}
-
-function setChunkColor(w, h){
-	let palletHist = {}
-	PALLET.forEach(p => palletHist[p] = 0)
-	let startW = w * CHUNK_SIZE;
-	let startH = h * CHUNK_SIZE;
-	for(let i = startW; i < startW + CHUNK_SIZE; i++){
-		for(let j = startH; j < startH + CHUNK_SIZE; j++){
-			if(i < width && j < height){
-				let color = buf[width * j + i];
-				palletHist[color]++
+					let testScore = getSampleScore(testPallet, slice);
+					if (testScore < score || !bestPallet) {
+						bestPallet = testPallet;
+						score = testScore;
+					}
+				}
+				PALLET = bestPallet;
 			}
-		}
-	}
 
-	let count = -1;
-	let color
-	PALLET.forEach(p => {
-		if(palletHist[p] > count){
-			count = palletHist[p];
-			color = p;
-		}
-	});
-	
-	for(let i = startW; i < startW + CHUNK_SIZE; i++){
-		for(let j = startH; j < startH + CHUNK_SIZE; j++){
-			if(i < width && j < height){
-				buf[width * j + i] = color;
+			function getSampleScore(testPallet, slice) {
+				return slice.reduce((score, c1) => {
+					const r1 = (c1 >> 16) & 0xFF;
+					const g1 = (c1 >> 8) & 0xFF;
+					const b1 = c1 & 0xFF;
+					return score + testPallet.reduce((distance, c2) => {
+						const r2 = (c2 >> 16) & 0xFF;
+						const g2 = (c2 >> 8) & 0xFF;
+						const b2 = c2 & 0xFF;
+						let testDistance = Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
+
+						return Math.min(testDistance, distance);
+					}, MAX_DISTANCE * MAX_DISTANCE);
+				}, 0);
 			}
-		}
-	}
-}
 
-function setChunkColorV2(w, h){
-	let tr = 0;
-	let tg = 0;
-	let tb = 0;
-	let startW = w * CHUNK_SIZE;
-	let startH = h * CHUNK_SIZE;
-	for(let i = startW; i < startW + CHUNK_SIZE; i++){
-		for(let j = startH; j < startH + CHUNK_SIZE; j++){
-			if(i < width && j < height){
-				let c = buf[width * j + i];
-				tr+= (c >> 16) & 0xFF; 
-				tg+= (c >> 8) & 0xFF;
-				tb+= c & 0xFF;
+			function tunePallet() {
+
+				const SAMPLE_LENGTH = 1000;
+				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
+				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
+				let baseScore = getSampleScore(PALLET, slice);
+				console.log(baseScore)
+
+				let changed = true;
+				while (changed) {
+					changed = false;
+					for (let i = 0; i < 3 * PALLET.length; i++) {
+						let index = Math.floor(i / 3);
+						let slot = i % 3;
+						let baseColor = PALLET[index];
+						let val = baseColor >> (8 * slot) & 0xFF
+						let direction = 0;
+						let newScore = baseScore;
+						let newColor = baseColor;
+
+						let raisedColor = baseColor + Math.pow(2, 8 * slot);
+						PALLET[index] = raisedColor;
+						let raisedScore = getSampleScore(PALLET, slice);
+						if (raisedScore < baseScore) {
+							direction = 1;
+							newColor = raisedColor;
+							newScore = raisedScore;
+						}
+
+						loweredColor = baseColor - Math.pow(2, 8 * slot);
+						PALLET[index] = loweredColor;
+						let loweredScore = getSampleScore(PALLET, slice);
+						if (loweredScore < Math.min(baseScore, newScore)) {
+							direction = -1;
+							newColor = loweredColor;
+							newScore = loweredScore;
+						}
+
+						if (direction != 0) {
+							changed = true;
+							while (newScore < baseScore) {
+								baseScore = newScore;
+								baseColor = newColor;
+								newColor = baseColor + (Math.pow(2, 8 * slot) * direction)
+								PALLET[index] = baseColor;
+								newScore = getSampleScore(PALLET, slice);
+							}
+						}
+
+						PALLET[index] = baseColor;
+					}
+
+					let newScore = getSampleScore(PALLET, slice);
+					console.log(newScore)
+				}
+
 			}
-		}
-	}
 
+			function getScore(testPallet) {
+				return buf.reduce((score, c1) => {
+					const r1 = (c1 >> 16) & 0xFF;
+					const g1 = (c1 >> 8) & 0xFF;
+					const b1 = c1 & 0xFF;
+					return score + Math.sqrt(testPallet.reduce((distance, c2) => {
+						const r2 = (c2 >> 16) & 0xFF;
+						const g2 = (c2 >> 8) & 0xFF;
+						const b2 = c2 & 0xFF;
+						let testDistance = Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
 
-	let r = Math.floor(tr / Math.pow(CHUNK_SIZE, 2));
-	let g = Math.floor(tg / Math.pow(CHUNK_SIZE, 2));
-	let b = Math.floor(tb / Math.pow(CHUNK_SIZE, 2));
-	let color = getClosestColor((255 << 24 | (r << 16) | (g << 8) | b) >>> 0);
-	
-	for(let i = startW; i < startW + CHUNK_SIZE; i++){
-		for(let j = startH; j < startH + CHUNK_SIZE; j++){
-			if(i < width && j < height){
-				buf[width * j + i] = color;
+						return Math.min(testDistance, distance);
+					}, MAX_DISTANCE * MAX_DISTANCE));
+				}, 0);
 			}
-		}
-	}
-}
 
-function compress(){
-	let counter = 0;
-	let max = 32;
-	let out = [];
-	let color = 0;
-	let chunkWidth = Math.ceil(width / CHUNK_SIZE);
-	let chunkHeight = Math.ceil(height / CHUNK_SIZE);
+			function interpolateFarthest() {
+				[c1, c2] = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
+				const r1 = (c1 >> 16) & 0xFF;
+				const g1 = (c1 >> 8) & 0xFF;
+				const b1 = c1 & 0xFF;
+				const r2 = (c2 >> 16) & 0xFF;
+				const g2 = (c2 >> 8) & 0xFF;
+				const b2 = c2 & 0xFF;
+				const rDistance = r2 - r1;
+				const gDistance = g2 - g1;
+				const bDistance = b2 - b1;
+				for (let i = 0; i < MAX_COLORS; i++) {
+					let c = (i + .5) / MAX_COLORS
+					let r = Math.floor(r1 + (rDistance * c));
+					let g = Math.floor(g1 + (gDistance * c));
+					let b = Math.floor(b1 + (bDistance * c));
+					PALLET.push((255 << 24 | (r << 16) | (g << 8) | b) >>> 0);
+				}
 
-	for(let i = 0; i < chunkWidth; i++){
-		for(let j = 0; j < chunkHeight; j++){
-
-			let index = (j * CHUNK_SIZE * width) + (i * CHUNK_SIZE)
-			if(color != buf[index] || counter == max){
-				out.push(color)
-				color = buf[index]
-				counter = 0;
 			}
-			counter++;
 
-		}
-	}
-	console.log(chunkWidth*chunkHeight)
-	console.log(out.length)
-}
+			function farthestColors(colors) {
+				colors = [...new Set(colors)]
+				console.log(colors.length);
 
-(function(){
-const fileInput = document.getElementById('file-input');
-const preview = document.getElementById('preview');
-const messages = document.getElementById('messages');
-const clearBtn = document.getElementById('clearBtn');
-const MAX_SIZE = 25 * 1024 * 1024; // 25MB
-const ALLOWED_TYPES = ['image/jpeg','image/png','image/gif','image/webp','image/svg+xml'];
+				var c1, c2
+				var distance = 0;
+
+				for (var i = 0; i < colors.length; i++) {
+					var iColor = colors[i];
+					for (var j = i + 1; j < colors.length; j++) {
+						var jColor = colors[j];
+						let testDistance = getDistance(iColor, jColor);
+						if (testDistance > distance) {
+							distance = testDistance;
+							c1 = iColor;
+							c2 = jColor;
+						}
+					}
+				}
+
+				return [c1, c2]
+			}
+
+			function addSplit() {
+				if (PALLET.length) {
+					var colorMap = {}
+					var randomStart = Math.floor(Math.random() * PIXEL_LIST.length)
+
+					PALLET.forEach(p => colorMap[p] = [])
+					for (var i = 0; i < 1000; i++) {
+						var c = buf[(i + randomStart) % PIXEL_LIST.length];
+						var closest = 0;
+						var distance = -1;
+						PALLET.forEach(c2 => {
+							var cDistance = getDistance(c, c2);
+							if (cDistance < distance || distance < 0) {
+								distance = cDistance;
+								closest = c2;
+							}
+						});
+
+						colorMap[closest].push(c);
+					}
+
+					var count = -1;
+					var color
+					PALLET.forEach(p => {
+						if (colorMap[p].length > count) {
+							count = colorMap[p].length;
+							color = p;
+						}
+					});
+
+					PALLET = PALLET.filter(p => p != color)
+					PALLET = PALLET.concat(farthestColors(colorMap[color]));
+				} else {
+					PALLET = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
+				}
+			}
+
+			function getDistance(c1, c2) {
+				const r1 = (c1 >> 16) & 0xFF;
+				const g1 = (c1 >> 8) & 0xFF;
+				const b1 = c1 & 0xFF;
+				const r2 = (c2 >> 16) & 0xFF;
+				const g2 = (c2 >> 8) & 0xFF;
+				const b2 = c2 & 0xFF;
+
+				return Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
+			}
+
+			function chunk() {
+				let chunkWidth = Math.ceil(width / CHUNK_SIZE);
+				let chunkHeight = Math.ceil(height / CHUNK_SIZE);
+
+				for (let i = 0; i < chunkWidth; i++) {
+					for (let j = 0; j < chunkHeight; j++) {
+						setChunkColor(i, j);
+					}
+				}
+
+				console.log("OUTSIZE: " + chunkWidth * chunkHeight * 4 / 8)
+			}
+
+			function setChunkColor(w, h) {
+				let palletHist = {}
+				PALLET.forEach(p => palletHist[p] = 0)
+				let startW = w * CHUNK_SIZE;
+				let startH = h * CHUNK_SIZE;
+				for (let i = startW; i < startW + CHUNK_SIZE; i++) {
+					for (let j = startH; j < startH + CHUNK_SIZE; j++) {
+						if (i < width && j < height) {
+							let color = buf[width * j + i];
+							palletHist[color]++
+						}
+					}
+				}
+
+				let count = -1;
+				let color
+				PALLET.forEach(p => {
+					if (palletHist[p] > count) {
+						count = palletHist[p];
+						color = p;
+					}
+				});
+
+				for (let i = startW; i < startW + CHUNK_SIZE; i++) {
+					for (let j = startH; j < startH + CHUNK_SIZE; j++) {
+						if (i < width && j < height) {
+							buf[width * j + i] = color;
+						}
+					}
+				}
+			}
+
+			function compress() {
+				let counter = 0;
+				let max = 32;
+				let out = [];
+				let color = 0;
+				let chunkWidth = Math.ceil(width / CHUNK_SIZE);
+				let chunkHeight = Math.ceil(height / CHUNK_SIZE);
+
+				for (let i = 0; i < chunkWidth; i++) {
+					for (let j = 0; j < chunkHeight; j++) {
+
+						let index = (j * CHUNK_SIZE * width) + (i * CHUNK_SIZE)
+						if (color != buf[index] || counter == max) {
+							out.push(color)
+							color = buf[index]
+							counter = 0;
+						}
+						counter++;
+
+					}
+				}
+				console.log(chunkWidth * chunkHeight)
+				console.log(out.length)
+			}
+
+			var url = null;
+			(function () {
+				const fileInput = document.getElementById('file-input');
+				const preview = document.getElementById('preview');
+				const messages = document.getElementById('messages');
+				const clearBtn = document.getElementById('clearBtn');
+				const MAX_SIZE = 25 * 1024 * 1024; // 25MB
+				const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+
+				const numColors = document.getElementById('numColors');
+				const numColorsVal = document.getElementById('numColorsVal');
+				const mode = document.getElementById('mode');
+				const modeVal = document.getElementById('modeVal');
+				const gd = document.getElementById('gdTuning');
+				const gdVal = document.getElementById('gdVal');
+				const chunk = document.getElementById('chunkSize');
+				const chunkVal = document.getElementById('chunkVal');
+				const resetBtn = document.getElementById('resetBtn');
+
+				let file = null;
+
+				function showMessage(text, isError) {
+					messages.textContent = text;
+					messages.style.color = isError ? '#ff9aa2' : '';
+				}
+
+				function updatePreview() {
+					preview.innerHTML = '';
+					if (!file) return;
+					url = URL.createObjectURL(file);
+					loadImage(url)
+					const div = document.createElement('div');
+					div.className = 'thumb';
+					div.innerHTML = `\n <img src="${url}" alt="Preview ${file.name}">\n <div class="meta"><span title="${file.name}">${truncate(file.name, 22)}</span><span>${formatBytes(file.size)}</span></div>\n `;
+					const img = div.querySelector('img');
+					img.addEventListener('load', () => URL.revokeObjectURL(url));
+					preview.appendChild(div);
+				}
+
+				function truncate(str, n) { return (str.length > n) ? str.slice(0, n - 1) + '…' : str; }
+				function formatBytes(bytes) {
+					if (bytes < 1024) return bytes + ' B';
+					if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+					return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+				}
+
+				function validateAndAdd(f) {
+					if (!f) return;
+					if (!ALLOWED_TYPES.includes(f.type)) { showMessage('Unsupported file type.', true); return; }
+					if (f.size > MAX_SIZE) { showMessage('File too large (max 5 MB).', true); return; }
+					file = f;
+					showMessage('File selected.');
+					updatePreview();
+				}
+
+				function clearAll() { file = null; updatePreview(); showMessage('Selection cleared.'); fileInput.value = '' }
+
+				fileInput.addEventListener('change', e => validateAndAdd(e.target.files[0]));
+				clearBtn.addEventListener('click', clearAll);
+
+				window.getSelectedFile = () => file;
+				window.clearSelectedFile = clearAll;
+
+				showMessage('No file selected.');
+
+				function update() {
+					numColorsVal.textContent = numColors.value;
+					modeVal.textContent = mode.value;
+					gdVal.textContent = gd.checked ? 'on' : 'off';
+					chunkVal.textContent = chunk.value;
+
+					MAX_COLORS = Number(numColors.value);
+					MODE = mode.value;
+					GRADIENT_DESCENT = gd.checked;
+					CHUNK_SIZE = Number(chunk.value);
+
+					if(file){
+						url = URL.createObjectURL(file);
+						loadImage(url)
+					}
+					
+				}
+
+				numColors.addEventListener('input', update);
+				mode.addEventListener('change', update);
+				gd.addEventListener('change', update);
+				chunk.addEventListener('input', update);
+
+				resetBtn.addEventListener('click', () => {
+					numColors.value = 4;
+					mode.value = 'split';
+					gd.checked = true;
+					chunk.value = 1;
+					update();
+				});
 
 
-let file = null;
-
-function showMessage(text, isError){
-	messages.textContent = text;
-	messages.style.color = isError ? '#ff9aa2' : '';
-}
-
-
-function updatePreview(){
-preview.innerHTML = '';
-if(!file) return;
-const url = URL.createObjectURL(file);
-loadImage(url)
-const div = document.createElement('div');
-div.className = 'thumb';
-div.innerHTML = `\n <img src="${url}" alt="Preview ${file.name}">\n <div class="meta"><span title="${file.name}">${truncate(file.name, 22)}</span><span>${formatBytes(file.size)}</span></div>\n `;
-const img = div.querySelector('img');
-img.addEventListener('load', ()=> URL.revokeObjectURL(url));
-preview.appendChild(div);
-}
-
-
-function truncate(str, n){ return (str.length>n)? str.slice(0,n-1)+'…' : str; }
-function formatBytes(bytes){
-if(bytes < 1024) return bytes + ' B';
-if(bytes < 1024*1024) return (bytes/1024).toFixed(1)+' KB';
-return (bytes/(1024*1024)).toFixed(2)+' MB';
-}
-
-
-function validateAndAdd(f){
-if(!f) return;
-if(!ALLOWED_TYPES.includes(f.type)) { showMessage('Unsupported file type.', true); return; }
-if(f.size > MAX_SIZE) { showMessage('File too large (max 5 MB).', true); return; }
-file = f;
-showMessage('File selected.');
-updatePreview();
-}
-
-
-function clearAll(){ file = null; updatePreview(); showMessage('Selection cleared.'); fileInput.value = '' }
-
-
-fileInput.addEventListener('change', e=> validateAndAdd(e.target.files[0]));
-clearBtn.addEventListener('click', clearAll);
-
-
-window.getSelectedFile = ()=> file;
-window.clearSelectedFile = clearAll;
-
-
-showMessage('No file selected.');
-})();
-</script>
+				// initialize
+				update();
+			})();
+		</script>
 </body>
+
 </html>
