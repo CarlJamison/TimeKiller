@@ -91,40 +91,12 @@
 		display: none
 	}
 
-	:root {
-		--bg: #0f1724;
-		--card: #0b1220;
-		--accent: #1ea7fd;
-		--muted: #98a0b3
-	}
-
-	* {
-		box-sizing: border-box
-	}
-
-	body {
-		font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-		background: #071023;
-		color: #eaf4ff;
-		padding: 28px
-	}
-
 	.card {
 		max-width: 720px;
 		margin: 0 auto;
 		background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
 		padding: 20px;
 		border-radius: 12px
-	}
-
-	h1 {
-		font-size: 18px;
-		margin: 0 0 8px
-	}
-
-	p.lead {
-		color: var(--muted);
-		margin: 0 0 16px
 	}
 
 	.row {
@@ -164,7 +136,7 @@
 	.actions {
 		display: flex;
 		gap: 8px;
-		justify-content: flex-end;
+		justify-content: center;
 		margin-top: 16px
 	}
 
@@ -184,6 +156,22 @@
 		border-radius: 8px;
 		color: var(--muted);
 		overflow: auto
+	}
+
+	.palette {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+		gap: 10px;
+		padding: 20px;
+		max-width: 100%;
+	}
+
+	.swatch {
+		width: 60px;
+		height: 60px;
+		border-radius: 6px;
+		border: 1px solid #ccc;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 	}
 
 	@media (max-width:640px) {
@@ -223,7 +211,7 @@
 		<div class="row">
 			<label for="numColors">Number of Colors</label>
 			<div class="control">
-				<input id="numColors" type="range" min="2" max="16" step="1" value="4" aria-valuemin="2"
+				<input id="numColors" type="range" min="2" max="16" step="1" value="6" aria-valuemin="2"
 					aria-valuemax="16">
 			</div>
 			<div class="value" id="numColorsVal">8</div>
@@ -235,7 +223,8 @@
 			<div class="control">
 				<select id="mode" aria-label="Selection mode">
 					<option value="color-split">Color split</option>
-					<option value="random">Random</option>
+					<option value="random-sample">Random Sample</option>
+					<option value="full-random">Full Random</option>
 				</select>
 			</div>
 			<div class="value" id="modeVal">random</div>
@@ -254,7 +243,7 @@
 		<div class="row">
 			<label for="chunkSize">Chunk size</label>
 			<div class="control">
-				<input id="chunkSize" type="range" min="1" max="16" step="1" value="1" aria-valuemin="2"
+				<input id="chunkSize" type="range" min="1" max="16" step="1" value="3" aria-valuemin="2"
 					aria-valuemax="16">
 			</div>
 			<div class="value" id="chunkVal">4</div>
@@ -266,6 +255,7 @@
 		</div>
 
 	</div>
+	<div class="palette" id="palette"></div>
 	<canvas style="width: 100%; border-radius: 10px;" id="myCanvas" \>
 		<script>
 			const canvas = document.getElementById("myCanvas");
@@ -273,10 +263,10 @@
 			var { width, height } = canvas.getBoundingClientRect();
 			var data;
 			var buf;
-			var MAX_COLORS = 4;
-			var CHUNK_SIZE = 2;
+			var MAX_COLORS = 6;
+			var CHUNK_SIZE = 3;
 			var GRADIENT_DESCENT = true;
-			var MODE = "color-split"
+			var PALLET_MODE = "color-split"
 
 			function loadImage(URL) {
 				const img = new Image();
@@ -294,27 +284,49 @@
 					//convertToGrayScale();
 
 					//interpolateFarthest()
-					if(mode == "random"){
+					if (PALLET_MODE == "random-sample") {
 						getRandomSample()
+					} else if (PALLET_MODE == "full-random") {
+						getRandomPallet()
+					} else {
+						while (PALLET.length < MAX_COLORS) {
+							addSplit()
+						}
 					}
-					
-					while (PALLET.length < MAX_COLORS) {
-						addSplit()
-					}
+
 					//PALLET = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
 
-					if(GRADIENT_DESCENT){
+					if (GRADIENT_DESCENT) {
 						tunePallet()
 					}
 
 					PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
-					
-					if(CHUNK_SIZE > 1){
+
+					if (CHUNK_SIZE > 1) {
 						chunk()
 					}
-		
+
+					const palette = document.getElementById("palette");
+					palette.innerHTML = ""
+					PALLET.forEach(c => {
+						const div = document.createElement("div");
+						div.className = "swatch";
+						div.style.background = uint32ToHexColor(c);
+						palette.appendChild(div);
+					});
+
 					ctx.putImageData(data, 0, 0);
 				};
+			}
+
+			function uint32ToHexColor(u) {
+				const r = (u >> 16) & 0xFF;
+				const g = (u >> 8) & 0xFF;
+				const b = u & 0xFF;
+				return "#" +
+					b.toString(16).padStart(2, "0") +
+					g.toString(16).padStart(2, "0") +
+					r.toString(16).padStart(2, "0");
 			}
 
 
@@ -349,9 +361,13 @@
 				let bestPallet;
 				let score = 0;
 
-				for (let i = 0; i < 100; i++) {
+				const SAMPLE_LENGTH = 10000;
+				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
+				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
+
+				for (let i = 0; i < 500; i++) {
 					let testPallet = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-					let testScore = getScore(testPallet);
+					let testScore = getSampleScore(testPallet, slice);
 					if (testScore < score || !bestPallet) {
 						bestPallet = testPallet;
 						score = testScore;
@@ -459,22 +475,6 @@
 					console.log(newScore)
 				}
 
-			}
-
-			function getScore(testPallet) {
-				return buf.reduce((score, c1) => {
-					const r1 = (c1 >> 16) & 0xFF;
-					const g1 = (c1 >> 8) & 0xFF;
-					const b1 = c1 & 0xFF;
-					return score + Math.sqrt(testPallet.reduce((distance, c2) => {
-						const r2 = (c2 >> 16) & 0xFF;
-						const g2 = (c2 >> 8) & 0xFF;
-						const b2 = c2 & 0xFF;
-						let testDistance = Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
-
-						return Math.min(testDistance, distance);
-					}, MAX_DISTANCE * MAX_DISTANCE));
-				}, 0);
 			}
 
 			function interpolateFarthest() {
@@ -614,31 +614,6 @@
 				}
 			}
 
-			function compress() {
-				let counter = 0;
-				let max = 32;
-				let out = [];
-				let color = 0;
-				let chunkWidth = Math.ceil(width / CHUNK_SIZE);
-				let chunkHeight = Math.ceil(height / CHUNK_SIZE);
-
-				for (let i = 0; i < chunkWidth; i++) {
-					for (let j = 0; j < chunkHeight; j++) {
-
-						let index = (j * CHUNK_SIZE * width) + (i * CHUNK_SIZE)
-						if (color != buf[index] || counter == max) {
-							out.push(color)
-							color = buf[index]
-							counter = 0;
-						}
-						counter++;
-
-					}
-				}
-				console.log(chunkWidth * chunkHeight)
-				console.log(out.length)
-			}
-
 			var url = null;
 			(function () {
 				const fileInput = document.getElementById('file-input');
@@ -711,15 +686,15 @@
 					chunkVal.textContent = chunk.value;
 
 					MAX_COLORS = Number(numColors.value);
-					MODE = mode.value;
+					PALLET_MODE = mode.value;
 					GRADIENT_DESCENT = gd.checked;
 					CHUNK_SIZE = Number(chunk.value);
 
-					if(file){
+					if (file) {
 						url = URL.createObjectURL(file);
 						loadImage(url)
 					}
-					
+
 				}
 
 				numColors.addEventListener('input', update);
