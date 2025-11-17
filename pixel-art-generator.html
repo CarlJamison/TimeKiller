@@ -118,15 +118,6 @@
 		width: 100%
 	}
 
-	select,
-	input[type=checkbox] {
-		padding: 8px;
-		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.06);
-		background: transparent;
-		color: inherit
-	}
-
 	.value {
 		min-width: 48px;
 		text-align: right;
@@ -217,29 +208,6 @@
 			<div class="value" id="numColorsVal">8</div>
 		</div>
 
-
-		<div class="row">
-			<label for="mode">Mode</label>
-			<div class="control">
-				<select id="mode" aria-label="Selection mode">
-					<option value="color-split">Color split</option>
-					<option value="random-sample">Random Sample</option>
-					<option value="full-random">Full Random</option>
-				</select>
-			</div>
-			<div class="value" id="modeVal">random</div>
-		</div>
-
-
-		<div class="row">
-			<label for="gdTuning">Gradient descent tuning</label>
-			<div class="control">
-				<input id="gdTuning" type="checkbox" checked="true" aria-checked="true">
-			</div>
-			<div class="value" id="gdVal">on</div>
-		</div>
-
-
 		<div class="row">
 			<label for="chunkSize">Chunk size</label>
 			<div class="control">
@@ -265,39 +233,25 @@
 			var buf;
 			var MAX_COLORS = 6;
 			var CHUNK_SIZE = 3;
-			var GRADIENT_DESCENT = true;
-			var PALLET_MODE = "color-split"
 
 			function loadImage(URL) {
 				const img = new Image();
 				img.crossOrigin = "anonymous";
 				img.src = URL;
 				img.onload = () => {
-					PALLET = [];
 					height = canvas.height = Math.floor(img.height * (width / img.width));
 					width = canvas.width = Math.floor(width)
 					ctx.drawImage(img, 0, 0, width, height);
 					data = ctx.getImageData(0, 0, width, height);
 					buf = new Uint32Array(data.data.buffer);
+
 					PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
-
-					//convertToGrayScale();
-
-					//interpolateFarthest()
-					if (PALLET_MODE == "random-sample") {
-						getRandomSample()
-					} else if (PALLET_MODE == "full-random") {
-						getRandomPallet()
-					} else {
-						while (PALLET.length < MAX_COLORS) {
-							addSplit()
-						}
-					}
-
-					//PALLET = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-
-					if (GRADIENT_DESCENT) {
-						tunePallet()
+					//PALLET = new Array(2).fill(4282400832);
+					PALLET = [4282400832];
+					tunePallet();
+					while(PALLET.length < MAX_COLORS){
+						PALLET.push(getCostliestColor());
+						tunePallet();
 					}
 
 					PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
@@ -329,8 +283,6 @@
 					r.toString(16).padStart(2, "0");
 			}
 
-
-			var PALLET = []// = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
 			const MAX_DISTANCE = Math.sqrt(195075);
 			function getClosestColor(c1) {
 				var returnColor = 0;
@@ -346,61 +298,38 @@
 				return returnColor;
 			}
 
-			function convertToGrayScale() {
-				for (let i = 0; i < buf.length; i++) {
-					let c = buf[i]
-					const r = (c >> 16) & 0xFF;
-					const g = (c >> 8) & 0xFF;
-					const b = c & 0xFF;
-					let v = Math.floor((r + g + b) / 3)
-					buf[i] = ((255 << 24 | (v << 16) | (v << 8) | v) >>> 0);
-				}
-			}
+			function getCostliestColor(){
+				let costs = [];
+				PALLET.forEach(p => costs[p] = 0);
 
-			function getRandomPallet() {
-				let bestPallet;
-				let score = 0;
+				for(let i = 0; i < buf.length; i++){
+					let color = 0;
+					let distance = -1;
+					let c1 = buf[i]
+					PALLET.forEach(c2 => {
+						let cDistance = getDistance(c1, c2);
+						if (cDistance < distance || distance < 0) {
+							distance = cDistance;
+							color = c2;
+						}
+					});
 
-				const SAMPLE_LENGTH = 10000;
-				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
-				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
-
-				for (let i = 0; i < 500; i++) {
-					let testPallet = Array(MAX_COLORS).fill().map(() => ~~(Math.random() * 0xFFFFFF) + 0xFF000000);
-					let testScore = getSampleScore(testPallet, slice);
-					if (testScore < score || !bestPallet) {
-						bestPallet = testPallet;
-						score = testScore;
-					}
-
-					console.log("Running sample " + testScore)
+					costs[color] += distance;
 				}
 
-				PALLET = bestPallet;
-			}
-
-			function getRandomSample() {
-				let bestPallet;
-				let score = 0;
-
-				const SAMPLE_LENGTH = 10000;
-				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
-				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
-
-				for (let i = 0; i < 1000; i++) {
-					console.log("Running sample " + i)
-					testPallet = []
-					for (j = 0; j < MAX_COLORS; j++) {
-						testPallet.push(buf[Math.floor(Math.random() * buf.length)]);
-					}
-
-					let testScore = getSampleScore(testPallet, slice);
-					if (testScore < score || !bestPallet) {
-						bestPallet = testPallet;
-						score = testScore;
+				
+				let color = PALLET[0];
+				let min = costs[color];
+				for(let i = 1; i < PALLET.length; i++){
+					let c = PALLET[i];
+					if(costs[c] < min){
+						min = costs[c];
+						color = c;
 					}
 				}
-				PALLET = bestPallet;
+
+				return color;
+
 			}
 
 			function getSampleScore(testPallet, slice) {
@@ -421,11 +350,11 @@
 
 			function tunePallet() {
 
-				const SAMPLE_LENGTH = 2000;
+				const SAMPLE_LENGTH = 1000;
 				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
 				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
 				let baseScore = getSampleScore(PALLET, slice);
-				console.log(baseScore)
+				console.log("Pallet Length: " + PALLET.length + " -> " + baseScore)
 
 				let changed;
 				while (changed != baseScore) {
@@ -466,87 +395,6 @@
 					console.log("Score: " + newScore)
 				}
 
-			}
-
-			function interpolateFarthest() {
-				[c1, c2] = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
-				const r1 = (c1 >> 16) & 0xFF;
-				const g1 = (c1 >> 8) & 0xFF;
-				const b1 = c1 & 0xFF;
-				const r2 = (c2 >> 16) & 0xFF;
-				const g2 = (c2 >> 8) & 0xFF;
-				const b2 = c2 & 0xFF;
-				const rDistance = r2 - r1;
-				const gDistance = g2 - g1;
-				const bDistance = b2 - b1;
-				for (let i = 0; i < MAX_COLORS; i++) {
-					let c = (i + .5) / MAX_COLORS
-					let r = Math.floor(r1 + (rDistance * c));
-					let g = Math.floor(g1 + (gDistance * c));
-					let b = Math.floor(b1 + (bDistance * c));
-					PALLET.push((255 << 24 | (r << 16) | (g << 8) | b) >>> 0);
-				}
-
-			}
-
-			function farthestColors(colors) {
-				colors = [...new Set(colors)]
-				console.log(colors.length);
-
-				var c1, c2
-				var distance = 0;
-
-				for (var i = 0; i < colors.length; i++) {
-					var iColor = colors[i];
-					for (var j = i + 1; j < colors.length; j++) {
-						var jColor = colors[j];
-						let testDistance = getDistance(iColor, jColor);
-						if (testDistance > distance) {
-							distance = testDistance;
-							c1 = iColor;
-							c2 = jColor;
-						}
-					}
-				}
-
-				return [c1, c2]
-			}
-
-			function addSplit() {
-				if (PALLET.length) {
-					var colorMap = {}
-					var randomStart = Math.floor(Math.random() * PIXEL_LIST.length)
-
-					PALLET.forEach(p => colorMap[p] = [])
-					for (var i = 0; i < 1000; i++) {
-						var c = buf[(i + randomStart) % PIXEL_LIST.length];
-						var closest = 0;
-						var distance = -1;
-						PALLET.forEach(c2 => {
-							var cDistance = getDistance(c, c2);
-							if (cDistance < distance || distance < 0) {
-								distance = cDistance;
-								closest = c2;
-							}
-						});
-
-						colorMap[closest].push(c);
-					}
-
-					var count = -1;
-					var color
-					PALLET.forEach(p => {
-						if (colorMap[p].length > count) {
-							count = colorMap[p].length;
-							color = p;
-						}
-					});
-
-					PALLET = PALLET.filter(p => p != color)
-					PALLET = PALLET.concat(farthestColors(colorMap[color]));
-				} else {
-					PALLET = farthestColors(PIXEL_LIST.slice(0, 1000).map(pixel => buf[pixel]));
-				}
 			}
 
 			function getDistance(c1, c2) {
@@ -605,7 +453,6 @@
 				}
 			}
 
-			var url = null;
 			(function () {
 				const fileInput = document.getElementById('file-input');
 				const preview = document.getElementById('preview');
@@ -616,10 +463,6 @@
 
 				const numColors = document.getElementById('numColors');
 				const numColorsVal = document.getElementById('numColorsVal');
-				const mode = document.getElementById('mode');
-				const modeVal = document.getElementById('modeVal');
-				const gd = document.getElementById('gdTuning');
-				const gdVal = document.getElementById('gdVal');
 				const chunk = document.getElementById('chunkSize');
 				const chunkVal = document.getElementById('chunkVal');
 				const resetBtn = document.getElementById('resetBtn');
@@ -634,7 +477,7 @@
 				function updatePreview() {
 					preview.innerHTML = '';
 					if (!file) return;
-					url = URL.createObjectURL(file);
+					let url = URL.createObjectURL(file);
 					loadImage(url)
 					const div = document.createElement('div');
 					div.className = 'thumb';
@@ -672,13 +515,9 @@
 
 				function update() {
 					numColorsVal.textContent = numColors.value;
-					modeVal.textContent = mode.value;
-					gdVal.textContent = gd.checked ? 'on' : 'off';
 					chunkVal.textContent = chunk.value;
 
 					MAX_COLORS = Number(numColors.value);
-					PALLET_MODE = mode.value;
-					GRADIENT_DESCENT = gd.checked;
 					CHUNK_SIZE = Number(chunk.value);
 
 					if (file) {
@@ -689,18 +528,13 @@
 				}
 
 				numColors.addEventListener('input', update);
-				mode.addEventListener('change', update);
-				gd.addEventListener('change', update);
 				chunk.addEventListener('input', update);
 
 				resetBtn.addEventListener('click', () => {
 					numColors.value = 4;
-					mode.value = 'split';
-					gd.checked = true;
 					chunk.value = 1;
 					update();
 				});
-
 
 				// initialize
 				update();
