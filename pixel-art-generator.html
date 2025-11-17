@@ -421,49 +421,40 @@
 
 			function tunePallet() {
 
-				const SAMPLE_LENGTH = 1000;
+				const SAMPLE_LENGTH = 2000;
 				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
 				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
 				let baseScore = getSampleScore(PALLET, slice);
 				console.log(baseScore)
 
-				let changed = true;
-				while (changed) {
-					changed = false;
+				let changed;
+				while (changed != baseScore) {
+					changed = baseScore;
 					for (let i = 0; i < 3 * PALLET.length; i++) {
 						let index = Math.floor(i / 3);
 						let slot = i % 3;
 						let baseColor = PALLET[index];
-						let val = baseColor >> (8 * slot) & 0xFF
 						let direction = 0;
 						let newScore = baseScore;
 						let newColor = baseColor;
 
-						let raisedColor = baseColor + Math.pow(2, 8 * slot);
-						PALLET[index] = raisedColor;
-						let raisedScore = getSampleScore(PALLET, slice);
-						if (raisedScore < baseScore) {
-							direction = 1;
-							newColor = raisedColor;
-							newScore = raisedScore;
-						}
-
-						loweredColor = baseColor - Math.pow(2, 8 * slot);
-						PALLET[index] = loweredColor;
-						let loweredScore = getSampleScore(PALLET, slice);
-						if (loweredScore < Math.min(baseScore, newScore)) {
-							direction = -1;
-							newColor = loweredColor;
-							newScore = loweredScore;
-						}
+						[1, -1].forEach(d => {
+							let changedColor = baseColor + (Math.pow(2, 8 * slot) * d);
+							PALLET[index] = changedColor;
+							let changedScore = getSampleScore(PALLET, slice);
+							if (changedScore < newScore) {
+								direction = d;
+								newColor = changedColor;
+								newScore = changedScore;
+							}
+						});
 
 						if (direction != 0) {
-							changed = true;
 							while (newScore < baseScore) {
 								baseScore = newScore;
 								baseColor = newColor;
 								newColor = baseColor + (Math.pow(2, 8 * slot) * direction)
-								PALLET[index] = baseColor;
+								PALLET[index] = newColor;
 								newScore = getSampleScore(PALLET, slice);
 							}
 						}
@@ -471,8 +462,8 @@
 						PALLET[index] = baseColor;
 					}
 
-					let newScore = getSampleScore(PALLET, slice);
-					console.log(newScore)
+					newScore = getSampleScore(PALLET, slice);
+					console.log("Score: " + newScore)
 				}
 
 			}
