@@ -246,7 +246,7 @@
 					buf = new Uint32Array(data.data.buffer);
 
 					PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
-					//PALLET = new Array(2).fill(4282400832);
+					
 					PALLET = [4282400832];
 					tunePallet();
 					while(PALLET.length < MAX_COLORS){
@@ -346,7 +346,7 @@
 						return Math.min(testDistance, distance);
 					}, MAX_DISTANCE * MAX_DISTANCE);
 				}, 0);
-			}
+			}		
 
 			function tunePallet() {
 
@@ -362,37 +362,21 @@
 					for (let i = 0; i < 3 * PALLET.length; i++) {
 						let index = Math.floor(i / 3);
 						let slot = i % 3;
-						let baseColor = PALLET[index];
-						let direction = 0;
-						let newScore = baseScore;
-						let newColor = baseColor;
 
 						[1, -1].forEach(d => {
-							let changedColor = baseColor + (Math.pow(2, 8 * slot) * d);
-							PALLET[index] = changedColor;
-							let changedScore = getSampleScore(PALLET, slice);
-							if (changedScore < newScore) {
-								direction = d;
-								newColor = changedColor;
-								newScore = changedScore;
-							}
-						});
-
-						if (direction != 0) {
-							while (newScore < baseScore) {
+							let newScore = baseScore;
+							while (newScore <= baseScore) {
 								baseScore = newScore;
-								baseColor = newColor;
-								newColor = baseColor + (Math.pow(2, 8 * slot) * direction)
-								PALLET[index] = newColor;
+								PALLET[index] += Math.pow(2, 8 * slot) * d;
 								newScore = getSampleScore(PALLET, slice);
 							}
-						}
 
-						PALLET[index] = baseColor;
+							PALLET[index] -= Math.pow(2, 8 * slot) * d
+						});
+
 					}
 
-					newScore = getSampleScore(PALLET, slice);
-					console.log("Score: " + newScore)
+					console.log("Score: " + baseScore)
 				}
 
 			}
