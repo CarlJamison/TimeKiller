@@ -316,14 +316,13 @@
 
 					costs[color] += distance;
 				}
-
 				
 				let color = PALLET[0];
-				let min = costs[color];
+				let max = costs[color];
 				for(let i = 1; i < PALLET.length; i++){
 					let c = PALLET[i];
-					if(costs[c] < min){
-						min = costs[c];
+					if(costs[c] > max){
+						max = costs[c];
 						color = c;
 					}
 				}
