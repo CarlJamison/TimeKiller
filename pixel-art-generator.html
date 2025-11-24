@@ -221,7 +221,7 @@
 					data = ctx.getImageData(0, 0, width, height);
 					buf = new Uint32Array(data.data.buffer);
 
-					PALLET = [4282400832];
+					PALLET = [4282400832, 4282400832];
 					tunePallet();
 					while (PALLET.length < MAX_COLORS) {
 						PALLET.push(getCostliestColor());
@@ -252,17 +252,14 @@
 				[0, 8, 16].reduce((p, c) => p + Math.pow(((a >> c) & 0xFF) - ((b >> c) & 0xFF), 2), 0);
 
 			function getClosestColor(c1) {
-				var returnColor = 0;
-				var distance = -1;
-				PALLET.forEach(c2 => {
-					var cDistance = getDistance(c1, c2);
-					if (cDistance < distance || distance < 0) {
-						distance = cDistance;
-						returnColor = c2;
-					}
-				});
+				let costs = getPalletCosts(c1);
+				return PALLET.reduce((p, c) => costs[c] < costs[p] ? c : p);
+			}
 
-				return returnColor;
+			function getPalletCosts(c1){
+				let costs = [];
+				PALLET.forEach(c2 => costs[c2] = getDistance(c1, c2));
+				return costs;
 			}
 
 			function getCostliestColor() {
@@ -270,26 +267,17 @@
 				PALLET.forEach(p => costs[p] = 0);
 
 				buf.forEach(c => {
-					let color = 0;
-					let distance = -1;
-					PALLET.forEach(c2 => {
-						let cDistance = getDistance(c, c2);
-						if (cDistance < distance || distance < 0) {
-							distance = cDistance;
-							color = c2;
-						}
-					});
-
-					costs[color] += distance;
+					let localCosts = getPalletCosts(c);
+					let color = PALLET.reduce((p, c) => localCosts[c] < localCosts[p] ? c : p);
+					costs[color] += localCosts[color];
 				});
 
 				return PALLET.reduce((p, c) => costs[c] > costs[p] ? c : p);
-
 			}
 
-			function getSampleScore(testPallet, slice){
-				return slice.reduce((score, c1) => 
-					score + testPallet.reduce((distance, c2) => 
+			function getSampleScore(testPallet, slice) {
+				return slice.reduce((score, c1) =>
+					score + testPallet.reduce((distance, c2) =>
 						Math.min(getDistance(c1, c2), distance), 195075), 0);
 			}
 
