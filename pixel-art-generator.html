@@ -46,13 +46,6 @@
 		font-size: 15px
 	}
 
-	.btn.secondary {
-		background: transparent;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		color: var(--muted);
-		margin-left: 10px
-	}
-
 	.preview {
 		margin-top: 20px;
 		display: flex;
@@ -141,14 +134,6 @@
 		cursor: pointer
 	}
 
-	pre {
-		background: rgba(255, 255, 255, 0.02);
-		padding: 12px;
-		border-radius: 8px;
-		color: var(--muted);
-		overflow: auto
-	}
-
 	.palette {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
@@ -182,12 +167,9 @@
 		<h1>Choose an Image</h1>
 		<p class="lead">Select one image file (JPEG, PNG, or GIF, up to 25 MB).</p>
 
-
 		<div class="actions">
 			<label class="btn" for="file-input">Select File</label>
-			<button type="button" class="btn secondary" id="clearBtn">Clear</button>
 		</div>
-
 
 		<input id="file-input" type="file" accept="image/*" aria-hidden="false">
 		<div id="messages" class="note" aria-live="polite"></div>
@@ -197,7 +179,6 @@
 	<div class="card" role="region" aria-labelledby="title">
 		<h1 id="title">Color Settings</h1>
 		<p class="lead">Adjust the parameters below. Values are constrained where noted.</p>
-
 
 		<div class="row">
 			<label for="numColors">Number of Colors</label>
@@ -215,11 +196,6 @@
 					aria-valuemax="16">
 			</div>
 			<div class="value" id="chunkVal">4</div>
-		</div>
-
-
-		<div class="actions">
-			<button id="resetBtn">Reset</button>
 		</div>
 
 	</div>
@@ -245,20 +221,16 @@
 					data = ctx.getImageData(0, 0, width, height);
 					buf = new Uint32Array(data.data.buffer);
 
-					PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
-					
 					PALLET = [4282400832];
 					tunePallet();
-					while(PALLET.length < MAX_COLORS){
+					while (PALLET.length < MAX_COLORS) {
 						PALLET.push(getCostliestColor());
 						tunePallet();
 					}
 
-					PIXEL_LIST.forEach(pixel => buf[pixel] = getClosestColor(buf[pixel]))
+					buf.forEach((v, i) => buf[i] = getClosestColor(v))
 
-					if (CHUNK_SIZE > 1) {
-						chunk()
-					}
+					if (CHUNK_SIZE > 1) chunk();
 
 					const palette = document.getElementById("palette");
 					palette.innerHTML = ""
@@ -273,17 +245,12 @@
 				};
 			}
 
-			function uint32ToHexColor(u) {
-				const r = (u >> 16) & 0xFF;
-				const g = (u >> 8) & 0xFF;
-				const b = u & 0xFF;
-				return "#" +
-					b.toString(16).padStart(2, "0") +
-					g.toString(16).padStart(2, "0") +
-					r.toString(16).padStart(2, "0");
-			}
+			const uint32ToHexColor = (u) =>
+				[0, 8, 16].reduce((p, c) => p + ((u >> c) & 0xFF).toString(16).padStart(2, "0"), "#");
 
-			const MAX_DISTANCE = Math.sqrt(195075);
+			const getDistance = (a, b) =>
+				[0, 8, 16].reduce((p, c) => p + Math.pow(((a >> c) & 0xFF) - ((b >> c) & 0xFF), 2), 0);
+
 			function getClosestColor(c1) {
 				var returnColor = 0;
 				var distance = -1;
@@ -298,16 +265,15 @@
 				return returnColor;
 			}
 
-			function getCostliestColor(){
+			function getCostliestColor() {
 				let costs = [];
 				PALLET.forEach(p => costs[p] = 0);
 
-				for(let i = 0; i < buf.length; i++){
+				buf.forEach(c => {
 					let color = 0;
 					let distance = -1;
-					let c1 = buf[i]
 					PALLET.forEach(c2 => {
-						let cDistance = getDistance(c1, c2);
+						let cDistance = getDistance(c, c2);
 						if (cDistance < distance || distance < 0) {
 							distance = cDistance;
 							color = c2;
@@ -315,43 +281,27 @@
 					});
 
 					costs[color] += distance;
-				}
-				
-				let color = PALLET[0];
-				let max = costs[color];
-				for(let i = 1; i < PALLET.length; i++){
-					let c = PALLET[i];
-					if(costs[c] > max){
-						max = costs[c];
-						color = c;
-					}
-				}
+				});
 
-				return color;
+				return PALLET.reduce((p, c) => costs[c] > costs[p] ? c : p);
 
 			}
 
-			function getSampleScore(testPallet, slice) {
-				return slice.reduce((score, c1) => {
-					const r1 = (c1 >> 16) & 0xFF;
-					const g1 = (c1 >> 8) & 0xFF;
-					const b1 = c1 & 0xFF;
-					return score + testPallet.reduce((distance, c2) => {
-						const r2 = (c2 >> 16) & 0xFF;
-						const g2 = (c2 >> 8) & 0xFF;
-						const b2 = c2 & 0xFF;
-						let testDistance = Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
+			function getSampleScore(testPallet, slice){
+				return slice.reduce((score, c1) => 
+					score + testPallet.reduce((distance, c2) => 
+						Math.min(getDistance(c1, c2), distance), 195075), 0);
+			}
 
-						return Math.min(testDistance, distance);
-					}, MAX_DISTANCE * MAX_DISTANCE);
-				}, 0);
-			}		
+			function getRandomSlice(length) {
+				let PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
+				let start = Math.floor((PIXEL_LIST.length - length) * Math.random());
+				return PIXEL_LIST.slice(start, start + length).map(p => buf[p]);
+			}
 
 			function tunePallet() {
 
-				const SAMPLE_LENGTH = 1000;
-				const start = Math.floor((PIXEL_LIST.length - SAMPLE_LENGTH) * Math.random());
-				let slice = PIXEL_LIST.slice(start, start + SAMPLE_LENGTH).map(p => buf[p]);
+				const slice = getRandomSlice(1000);
 				let baseScore = getSampleScore(PALLET, slice);
 				console.log("Pallet Length: " + PALLET.length + " -> " + baseScore)
 
@@ -360,17 +310,17 @@
 					changed = baseScore;
 					for (let i = 0; i < 3 * PALLET.length; i++) {
 						let index = Math.floor(i / 3);
-						let slot = i % 3;
+						let slot = (i % 3) * 8;
 
 						[1, -1].forEach(d => {
 							let newScore = baseScore;
 							while (newScore <= baseScore) {
 								baseScore = newScore;
-								PALLET[index] += Math.pow(2, 8 * slot) * d;
+								PALLET[index] += d << slot;
 								newScore = getSampleScore(PALLET, slice);
 							}
 
-							PALLET[index] -= Math.pow(2, 8 * slot) * d
+							PALLET[index] -= d << slot
 						});
 
 					}
@@ -378,17 +328,6 @@
 					console.log("Score: " + baseScore)
 				}
 
-			}
-
-			function getDistance(c1, c2) {
-				const r1 = (c1 >> 16) & 0xFF;
-				const g1 = (c1 >> 8) & 0xFF;
-				const b1 = c1 & 0xFF;
-				const r2 = (c2 >> 16) & 0xFF;
-				const g2 = (c2 >> 8) & 0xFF;
-				const b2 = c2 & 0xFF;
-
-				return Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
 			}
 
 			function chunk() {
@@ -400,8 +339,6 @@
 						setChunkColor(i, j);
 					}
 				}
-
-				console.log("OUTSIZE: " + chunkWidth * chunkHeight * 4 / 8)
 			}
 
 			function setChunkColor(w, h) {
@@ -418,14 +355,7 @@
 					}
 				}
 
-				let count = -1;
-				let color
-				PALLET.forEach(p => {
-					if (palletHist[p] > count) {
-						count = palletHist[p];
-						color = p;
-					}
-				});
+				let color = PALLET.reduce((p, c) => palletHist[c] > palletHist[p] ? c : p);
 
 				for (let i = startW; i < startW + CHUNK_SIZE; i++) {
 					for (let j = startH; j < startH + CHUNK_SIZE; j++) {
@@ -440,7 +370,6 @@
 				const fileInput = document.getElementById('file-input');
 				const preview = document.getElementById('preview');
 				const messages = document.getElementById('messages');
-				const clearBtn = document.getElementById('clearBtn');
 				const MAX_SIZE = 25 * 1024 * 1024; // 25MB
 				const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 
@@ -448,7 +377,6 @@
 				const numColorsVal = document.getElementById('numColorsVal');
 				const chunk = document.getElementById('chunkSize');
 				const chunkVal = document.getElementById('chunkVal');
-				const resetBtn = document.getElementById('resetBtn');
 
 				let file = null;
 
@@ -486,13 +414,9 @@
 					updatePreview();
 				}
 
-				function clearAll() { file = null; updatePreview(); showMessage('Selection cleared.'); fileInput.value = '' }
-
 				fileInput.addEventListener('change', e => validateAndAdd(e.target.files[0]));
-				clearBtn.addEventListener('click', clearAll);
 
 				window.getSelectedFile = () => file;
-				window.clearSelectedFile = clearAll;
 
 				showMessage('No file selected.');
 
@@ -512,12 +436,6 @@
 
 				numColors.addEventListener('input', update);
 				chunk.addEventListener('input', update);
-
-				resetBtn.addEventListener('click', () => {
-					numColors.value = 4;
-					chunk.value = 1;
-					update();
-				});
 
 				// initialize
 				update();
