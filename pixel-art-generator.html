@@ -239,8 +239,8 @@
 					palletList[colorIndex] = PALLET
 				}
 
-				let pixelated = generatePixelated();
-				if (CHUNK_SIZE > 1) chunk(pixelated);
+				let pixelated = buf.slice();
+				chunk(pixelated);
 
 				const palette = document.getElementById("palette");
 				palette.innerHTML = ""
@@ -259,34 +259,19 @@
 				}
 			}
 
-			function generatePixelated() {
-				let cache = [];
-				return buf.map((v, i) => cache[v] ?? (cache[v] = getClosestColor(v)));
-			}
-
 			const uint32ToHexColor = (u) =>
 				[0, 8, 16].reduce((p, c) => p + ((u >> c) & 0xFF).toString(16).padStart(2, "0"), "#");
 
 			const getDistance = (a, b) =>
 				[0, 8, 16].reduce((p, c) => p + Math.pow(((a >> c) & 0xFF) - ((b >> c) & 0xFF), 2), 0);
 
-			function getClosestColor(c1) {
-				let costs = getPalletCosts(c1);
-				return PALLET.reduce((p, c) => costs[c] < costs[p] ? c : p);
-			}
-
-			function getPalletCosts(c1) {
-				let costs = [];
-				PALLET.forEach(c2 => costs[c2] = getDistance(c1, c2));
-				return costs;
-			}
-
 			function getCostliestColor() {
 				let costs = [];
 				PALLET.forEach(p => costs[p] = 0);
 
-				buf.forEach(c => {
-					let localCosts = getPalletCosts(c);
+				buf.forEach(c1 => {
+					let localCosts = [];
+					PALLET.forEach(c2 => costs[c2] = getDistance(c1, c2));
 					let color = PALLET.reduce((p, c) => localCosts[c] < localCosts[p] ? c : p);
 					costs[color] += localCosts[color];
 				});
@@ -305,54 +290,78 @@
 
 			function tunePallet() {
 
-				const slice = getRandomSlice(1000);
+				const slice = getRandomSlice(2000);
 				let baseScore = getSampleScore(PALLET, slice);
 				console.log("Pallet Length: " + PALLET.length + " -> " + baseScore)
 
-				let changed;
-				while (changed != baseScore) {
-					changed = baseScore;
+				while (true) {
+
+					let step = Array(PALLET.length * 3).fill(0);
 					for (let i = 0; i < 3 * PALLET.length; i++) {
 						let index = Math.floor(i / 3);
 						let slot = (i % 3) * 8;
 
 						[1, -1].forEach(d => {
-							let newScore = baseScore;
-							while (newScore <= baseScore) {
+							if(step[i]) return;
+							PALLET[index] += d << slot;
+							let newScore = getSampleScore(PALLET, slice);
+							if(newScore < baseScore){
 								baseScore = newScore;
-								PALLET[index] += d << slot;
-								newScore = getSampleScore(PALLET, slice);
+								step[i] = d;
+							}else{
+								PALLET[index] -= d << slot
 							}
-
-							PALLET[index] -= d << slot
 						});
-
 					}
+
+					if(step.every(v => !v)) return;
+					let isImprovement = true;
+
+					do{
+						let tempPallet = PALLET.slice();
+						step.forEach((d, i) => 
+							tempPallet[Math.floor(i / 3)] += d << ((i % 3) * 8));
+						
+						let newScore = getSampleScore(tempPallet, slice);
+						isImprovement = newScore < baseScore;
+						if(isImprovement){
+							PALLET = tempPallet;
+							baseScore = newScore;
+						}
+						
+					} while(isImprovement) 
 
 					console.log("Score: " + baseScore)
 				}
 
 			}
 
-			function chunk(pixelated) {
-				let palletHist = [];
+			function chunk(buffer) {
+				let hist = [];
 
 				for (let sW = 0; sW < width; sW += CHUNK_SIZE) {
 					for (let sH = 0; sH < height; sH += CHUNK_SIZE) {
-						PALLET.forEach(p => palletHist[p] = 0);
+						[0, 8, 16].forEach(p => hist[p] = 0);
 
+						let count = 0;
 						for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
 							for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
-								let color = pixelated[width * j + i];
-								palletHist[color]++
+								let color = buffer[width * j + i];
+								[0, 8, 16].forEach(shift =>
+									hist[shift] += (color >> shift) & 0xFF);
+								count++;
 							}
 						}
 
-						let color = PALLET.reduce((p, c) => palletHist[c] > palletHist[p] ? c : p);
+						let costs = [];
+						PALLET.forEach(c => 
+							costs[c] = [0, 8, 16].reduce((score, shift) => 
+								score + Math.pow(((c >> shift) & 0xFF) - Math.floor(hist[shift] / count), 2), 0));
+						let color = PALLET.reduce((p, c) => costs[c] < costs[p] ? c : p);
 
 						for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
 							for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
-								pixelated[width * j + i] = color;
+								buffer[width * j + i] = color;
 							}
 						}
 					}
