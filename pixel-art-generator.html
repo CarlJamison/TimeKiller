@@ -300,11 +300,8 @@
 						Math.min(getDistance(c1, c2), distance), 195075), 0);
 			}
 
-			function getRandomSlice(length) {
-				let PIXEL_LIST = buf.map((_, i) => i).sort(() => Math.random() - 0.5);
-				let start = Math.floor((PIXEL_LIST.length - length) * Math.random());
-				return PIXEL_LIST.slice(start, start + length).map(p => buf[p]);
-			}
+			const getRandomSlice = length =>
+				Array.from({ length }, () => buf[Math.floor(Math.random() * buf.length)]);
 
 			function tunePallet() {
 
@@ -338,33 +335,26 @@
 			}
 
 			function chunk(pixelated) {
-				let chunkWidth = Math.ceil(width / CHUNK_SIZE);
-				let chunkHeight = Math.ceil(height / CHUNK_SIZE);
+				let palletHist = [];
 
-				for (let i = 0; i < chunkWidth; i++) {
-					for (let j = 0; j < chunkHeight; j++) {
-						setChunkColor(i, j, pixelated);
-					}
-				}
-			}
+				for (let sW = 0; sW < width; sW += CHUNK_SIZE) {
+					for (let sH = 0; sH < height; sH += CHUNK_SIZE) {
+						PALLET.forEach(p => palletHist[p] = 0);
 
-			function setChunkColor(w, h, pixelated) {
-				let palletHist = {}
-				PALLET.forEach(p => palletHist[p] = 0)
-				let sW = w * CHUNK_SIZE;
-				let sH = h * CHUNK_SIZE;
-				for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
-					for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
-						let color = pixelated[width * j + i];
-						palletHist[color]++
-					}
-				}
+						for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
+							for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
+								let color = pixelated[width * j + i];
+								palletHist[color]++
+							}
+						}
 
-				let color = PALLET.reduce((p, c) => palletHist[c] > palletHist[p] ? c : p);
-				
-				for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
-					for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
-						pixelated[width * j + i] = color;
+						let color = PALLET.reduce((p, c) => palletHist[c] > palletHist[p] ? c : p);
+
+						for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
+							for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
+								pixelated[width * j + i] = color;
+							}
+						}
 					}
 				}
 			}
