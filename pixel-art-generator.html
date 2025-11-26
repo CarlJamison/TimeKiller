@@ -209,11 +209,15 @@
 			var buf;
 			var MAX_COLORS = 6;
 			var CHUNK_SIZE = 3;
+			var file;
+			var colorIndex;
+			var palletList;
 
-			function loadImage(URL) {
+			function loadImage() {
 				const img = new Image();
 				img.crossOrigin = "anonymous";
-				img.src = URL;
+				img.src = URL.createObjectURL(file);
+
 				img.onload = () => {
 					height = canvas.height = Math.floor(img.height * (width / img.width));
 					width = canvas.width = Math.floor(width)
@@ -221,28 +225,43 @@
 					data = ctx.getImageData(0, 0, width, height);
 					buf = new Uint32Array(data.data.buffer);
 
-					PALLET = [4282400832, 4282400832];
-					tunePallet();
-					while (PALLET.length < MAX_COLORS) {
-						PALLET.push(getCostliestColor());
-						tunePallet();
-					}
-
-					buf.forEach((v, i) => buf[i] = getClosestColor(v))
-
-					if (CHUNK_SIZE > 1) chunk();
-
-					const palette = document.getElementById("palette");
-					palette.innerHTML = ""
-					PALLET.forEach(c => {
-						const div = document.createElement("div");
-						div.className = "swatch";
-						div.style.background = uint32ToHexColor(c);
-						palette.appendChild(div);
-					});
-
-					ctx.putImageData(data, 0, 0);
+					process();
 				};
+			}
+
+			function process() {
+				if (palletList[MAX_COLORS]) {
+					PALLET = palletList[MAX_COLORS];
+				} else {
+					PALLET = palletList[colorIndex++].slice();
+					PALLET.push(getCostliestColor());
+					tunePallet();
+					palletList[colorIndex] = PALLET
+				}
+
+				let pixelated = generatePixelated();
+				if (CHUNK_SIZE > 1) chunk(pixelated);
+
+				const palette = document.getElementById("palette");
+				palette.innerHTML = ""
+				PALLET.forEach(c => {
+					const div = document.createElement("div");
+					div.className = "swatch";
+					div.style.background = uint32ToHexColor(c);
+					palette.appendChild(div);
+				});
+
+				let newData = new ImageData(new Uint8ClampedArray(pixelated.buffer), width, height);
+				ctx.putImageData(newData, 0, 0);
+
+				if (colorIndex < MAX_COLORS) {
+					window.requestAnimationFrame(process);
+				}
+			}
+
+			function generatePixelated() {
+				let cache = [];
+				return buf.map((v, i) => cache[v] ?? (cache[v] = getClosestColor(v)));
 			}
 
 			const uint32ToHexColor = (u) =>
@@ -256,7 +275,7 @@
 				return PALLET.reduce((p, c) => costs[c] < costs[p] ? c : p);
 			}
 
-			function getPalletCosts(c1){
+			function getPalletCosts(c1) {
 				let costs = [];
 				PALLET.forEach(c2 => costs[c2] = getDistance(c1, c2));
 				return costs;
@@ -318,38 +337,34 @@
 
 			}
 
-			function chunk() {
+			function chunk(pixelated) {
 				let chunkWidth = Math.ceil(width / CHUNK_SIZE);
 				let chunkHeight = Math.ceil(height / CHUNK_SIZE);
 
 				for (let i = 0; i < chunkWidth; i++) {
 					for (let j = 0; j < chunkHeight; j++) {
-						setChunkColor(i, j);
+						setChunkColor(i, j, pixelated);
 					}
 				}
 			}
 
-			function setChunkColor(w, h) {
+			function setChunkColor(w, h, pixelated) {
 				let palletHist = {}
 				PALLET.forEach(p => palletHist[p] = 0)
-				let startW = w * CHUNK_SIZE;
-				let startH = h * CHUNK_SIZE;
-				for (let i = startW; i < startW + CHUNK_SIZE; i++) {
-					for (let j = startH; j < startH + CHUNK_SIZE; j++) {
-						if (i < width && j < height) {
-							let color = buf[width * j + i];
-							palletHist[color]++
-						}
+				let sW = w * CHUNK_SIZE;
+				let sH = h * CHUNK_SIZE;
+				for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
+					for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
+						let color = pixelated[width * j + i];
+						palletHist[color]++
 					}
 				}
 
 				let color = PALLET.reduce((p, c) => palletHist[c] > palletHist[p] ? c : p);
-
-				for (let i = startW; i < startW + CHUNK_SIZE; i++) {
-					for (let j = startH; j < startH + CHUNK_SIZE; j++) {
-						if (i < width && j < height) {
-							buf[width * j + i] = color;
-						}
+				
+				for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
+					for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
+						pixelated[width * j + i] = color;
 					}
 				}
 			}
@@ -366,8 +381,6 @@
 				const chunk = document.getElementById('chunkSize');
 				const chunkVal = document.getElementById('chunkVal');
 
-				let file = null;
-
 				function showMessage(text, isError) {
 					messages.textContent = text;
 					messages.style.color = isError ? '#ff9aa2' : '';
@@ -377,7 +390,6 @@
 					preview.innerHTML = '';
 					if (!file) return;
 					let url = URL.createObjectURL(file);
-					loadImage(url)
 					const div = document.createElement('div');
 					div.className = 'thumb';
 					div.innerHTML = `\n <img src="${url}" alt="Preview ${file.name}">\n <div class="meta"><span title="${file.name}">${truncate(file.name, 22)}</span><span>${formatBytes(file.size)}</span></div>\n `;
@@ -387,6 +399,7 @@
 				}
 
 				function truncate(str, n) { return (str.length > n) ? str.slice(0, n - 1) + '…' : str; }
+
 				function formatBytes(bytes) {
 					if (bytes < 1024) return bytes + ' B';
 					if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -398,11 +411,13 @@
 					if (!ALLOWED_TYPES.includes(f.type)) { showMessage('Unsupported file type.', true); return; }
 					if (f.size > MAX_SIZE) { showMessage('File too large (max 5 MB).', true); return; }
 					file = f;
+					colorIndex = 1;
+					palletList = [[], [4282400832]];
+
 					showMessage('File selected.');
+					loadImage()
 					updatePreview();
 				}
-
-				fileInput.addEventListener('change', e => validateAndAdd(e.target.files[0]));
 
 				window.getSelectedFile = () => file;
 
@@ -415,13 +430,10 @@
 					MAX_COLORS = Number(numColors.value);
 					CHUNK_SIZE = Number(chunk.value);
 
-					if (file) {
-						url = URL.createObjectURL(file);
-						loadImage(url)
-					}
-
+					if (file) process()
 				}
 
+				fileInput.addEventListener('change', e => validateAndAdd(e.target.files[0]));
 				numColors.addEventListener('input', update);
 				chunk.addEventListener('input', update);
 
