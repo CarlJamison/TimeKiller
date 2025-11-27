@@ -271,7 +271,7 @@
 
 				buf.forEach(c1 => {
 					let localCosts = [];
-					PALLET.forEach(c2 => costs[c2] = getDistance(c1, c2));
+					PALLET.forEach(c2 => localCosts[c2] = getDistance(c1, c2));
 					let color = PALLET.reduce((p, c) => localCosts[c] < localCosts[p] ? c : p);
 					costs[color] += localCosts[color];
 				});
