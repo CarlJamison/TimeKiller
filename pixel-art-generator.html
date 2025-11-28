@@ -269,7 +269,7 @@
 				let costs = [];
 				PALLET.forEach(p => costs[p] = 0);
 
-				buf.forEach(c1 => {
+				getRandomSlice(10000).forEach(c1 => {
 					let localCosts = [];
 					PALLET.forEach(c2 => localCosts[c2] = getDistance(c1, c2));
 					let color = PALLET.reduce((p, c) => localCosts[c] < localCosts[p] ? c : p);
@@ -290,48 +290,44 @@
 
 			function tunePallet() {
 
-				const slice = getRandomSlice(2000);
+				const slice = getRandomSlice(5000);
 				let baseScore = getSampleScore(PALLET, slice);
 				console.log("Pallet Length: " + PALLET.length + " -> " + baseScore)
 
 				while (true) {
 
-					let step = Array(PALLET.length * 3).fill(0);
-					for (let i = 0; i < 3 * PALLET.length; i++) {
-						let index = Math.floor(i / 3);
-						let slot = (i % 3) * 8;
-
-						[1, -1].forEach(d => {
-							if(step[i]) return;
-							PALLET[index] += d << slot;
-							let newScore = getSampleScore(PALLET, slice);
-							if(newScore < baseScore){
+					let vector = Array(PALLET.length * 3).fill(0).map((_, i) =>
+						[1, -1].find(d => {
+							let tempPallet = PALLET.slice()
+							tempPallet[Math.floor(i / 3)] += d << (i % 3) * 8;
+							let newScore = getSampleScore(tempPallet, slice);
+							if (newScore < baseScore) {
 								baseScore = newScore;
-								step[i] = d;
-							}else{
-								PALLET[index] -= d << slot
+								PALLET = tempPallet;
+								return true;
 							}
-						});
-					}
+							return false;
+						}) ?? 0
+					);
 
-					if(step.every(v => !v)) return;
-					let isImprovement = true;
+					let steps = 1;
+					if (vector.every(v => !v)) return;
 
-					do{
-						let tempPallet = PALLET.slice();
-						step.forEach((d, i) => 
-							tempPallet[Math.floor(i / 3)] += d << ((i % 3) * 8));
-						
+					do {
+						let tempPallet = PALLET.map((v, i) =>
+							[0, 1, 2].reduce((p, c) => p + ((vector[i * 3 + c] * steps) << (c * 8)), v))
+
 						let newScore = getSampleScore(tempPallet, slice);
-						isImprovement = newScore < baseScore;
-						if(isImprovement){
+						var isImprovement = newScore < baseScore;
+						if (isImprovement) {
 							PALLET = tempPallet;
 							baseScore = newScore;
+							steps++;
 						}
-						
-					} while(isImprovement) 
 
-					console.log("Score: " + baseScore)
+					} while (isImprovement)
+
+					console.log("Score: " + baseScore + ", Steps: " + steps + "\nVector: " + vector)
 				}
 
 			}
@@ -354,8 +350,8 @@
 						}
 
 						let costs = [];
-						PALLET.forEach(c => 
-							costs[c] = [0, 8, 16].reduce((score, shift) => 
+						PALLET.forEach(c =>
+							costs[c] = [0, 8, 16].reduce((score, shift) =>
 								score + Math.pow(((c >> shift) & 0xFF) - Math.floor(hist[shift] / count), 2), 0));
 						let color = PALLET.reduce((p, c) => costs[c] < costs[p] ? c : p);
 
