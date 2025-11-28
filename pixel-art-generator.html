@@ -199,6 +199,7 @@
 		</div>
 
 	</div>
+	<div id="downloadArea"></div>
 	<div class="palette" id="palette"></div>
 	<canvas style="width: 100%; border-radius: 10px;" id="myCanvas" \>
 		<script>
@@ -254,9 +255,25 @@
 				let newData = new ImageData(new Uint8ClampedArray(pixelated.buffer), width, height);
 				ctx.putImageData(newData, 0, 0);
 
+				createDownload();
+				
+
 				if (colorIndex < MAX_COLORS) {
 					window.requestAnimationFrame(process);
 				}
+			}
+
+			function createDownload(){
+				document.getElementById("downloadArea").innerHTML = 
+					"<button id=\"downloadButton\">Download</button>";
+					
+				document.getElementById('downloadButton').addEventListener('click', () => {
+					var image = canvas.toDataURL();
+					var aDownloadLink = document.createElement('a');
+					aDownloadLink.download = 'pixelArt.png';
+					aDownloadLink.href = image;
+					aDownloadLink.click();
+				});
 			}
 
 			const uint32ToHexColor = (u) =>
