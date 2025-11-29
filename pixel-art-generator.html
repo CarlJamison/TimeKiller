@@ -242,6 +242,7 @@
 
 				let pixelated = buf.slice();
 				chunk(pixelated);
+				smooth(pixelated)
 
 				const palette = document.getElementById("palette");
 				palette.innerHTML = ""
@@ -256,17 +257,36 @@
 				ctx.putImageData(newData, 0, 0);
 
 				createDownload();
-				
 
 				if (colorIndex < MAX_COLORS) {
 					window.requestAnimationFrame(process);
 				}
 			}
 
-			function createDownload(){
-				document.getElementById("downloadArea").innerHTML = 
+			function smooth(pixelated) {
+
+				for (let sW = CHUNK_SIZE; sW + CHUNK_SIZE < width; sW += CHUNK_SIZE) {
+					for (let sH = CHUNK_SIZE; sH + CHUNK_SIZE < height; sH += CHUNK_SIZE) {
+
+						let surrounding = [1, -1, width, -width, width + 1, width - 1, -width + 1, -width - 1]
+							.map(o => pixelated[width * sH + sW + (o * CHUNK_SIZE)]);
+
+						if(surrounding.every(v => v == surrounding[0])) {
+							for (let i = sW; i < sW + CHUNK_SIZE && i < width; i++) {
+								for (let j = sH; j < sH + CHUNK_SIZE && j < height; j++) {
+									pixelated[width * j + i] = surrounding[0];
+								}
+							}
+						};
+					}
+				}
+
+			}
+
+			function createDownload() {
+				document.getElementById("downloadArea").innerHTML =
 					"<button id=\"downloadButton\">Download</button>";
-					
+
 				document.getElementById('downloadButton').addEventListener('click', () => {
 					var image = canvas.toDataURL();
 					var aDownloadLink = document.createElement('a');
